@@ -609,7 +609,7 @@ export default function Reviews() {
 
   const stats = useMemo(() => {
     if (!reviews.length) {
-      return { total: 0, average: "â€”", fiveStar: 0 };
+      return { total: 0, average: 0, fiveStar: 0 };
     }
 
     const totalRating = reviews.reduce(

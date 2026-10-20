@@ -642,7 +642,7 @@ function Contact() {
                       group-hover:translate-x-2
                     "
                   >
-                    â†’
+                   
                   </span>
                 )}
               </motion.button>
@@ -673,7 +673,7 @@ function Contact() {
         >
           <span>Midhun Frames</span>
           <span>Photography Â· Films Â· Visual Stories</span>
-          <span>05 â€” Contact</span>
+          <span> Contact</span>
         </motion.div>
       </div>
     </section>

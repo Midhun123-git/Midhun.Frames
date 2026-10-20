@@ -613,7 +613,7 @@ function Portfolio() {
                 See Full Gallery
 
                 <span className="text-sm transition-transform duration-300 group-hover:translate-x-1">
-                  â†’
+                  
                 </span>
               </a>
             </motion.div>
