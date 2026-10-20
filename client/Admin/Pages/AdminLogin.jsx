@@ -9,7 +9,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import axios from "axios"
+import api from "../../src/api/api.js"
 
 const AdminLogin = () => {
   const navigate = useNavigate()
@@ -45,13 +45,10 @@ const AdminLogin = () => {
     try {
       setLoading(true)
 
-      const response = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        {
-          email: formData.email,
-          password: formData.password,
-        }
-      )
+ const response = await api.post("/auth/login", {
+  email: formData.email,
+  password: formData.password,
+})
 
       console.log("Admin login response:", response.data)
 
