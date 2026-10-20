@@ -1,4 +1,4 @@
-
+﻿
 import React, { useCallback, useEffect, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import {
@@ -18,7 +18,7 @@ import {
   XCircle,
 } from "lucide-react"
 import DeleteConfirmModal from "../../../src/Components/DeleteConfirmModel.jsx"
-import api from "../../../../server/Api/api.js"
+import api from "../../../src/api/api.js"
 
 const CATEGORIES = [
   "Wedding",
@@ -610,7 +610,7 @@ function Gallery() {
                     <p className="mt-1 truncate text-xs text-white/40">
                       {[photo.client, photo.date]
                         .filter(Boolean)
-                        .join(" · ") || "Portrait / Personal work"}
+                        .join(" Â· ") || "Portrait / Personal work"}
                     </p>
                   </div>
 
@@ -838,7 +838,7 @@ function Gallery() {
                     </span>
 
                     <span className="mt-2 text-xs text-white/35">
-                      Images: max 10 MB · Videos: max 100 MB
+                      Images: max 10 MB Â· Videos: max 100 MB
                     </span>
 
                     <input
@@ -1036,3 +1036,4 @@ function Gallery() {
 }
 
 export default Gallery
+

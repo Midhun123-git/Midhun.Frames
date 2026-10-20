@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+﻿import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   Images,
@@ -13,7 +13,7 @@ import {
   MessageSquare,
   RefreshCw,
 } from "lucide-react"
-import api from "../../../server/Api/api.js"
+import api from "../../src/api/api.js"
 
 const Dashboard = () => {
   const navigate = useNavigate()
@@ -658,11 +658,11 @@ const Dashboard = () => {
 
       <footer className="mt-14 flex flex-col justify-between gap-3 border-t border-white/10 pt-6 text-[7px] uppercase tracking-[0.25em] text-white/20 sm:flex-row">
         <span>
-          Midhun Frames © 2026
+          Midhun Frames Â© 2026
         </span>
 
         <span>
-          Photography · Web Development · Visual Stories
+          Photography Â· Web Development Â· Visual Stories
         </span>
       </footer>
     </div>

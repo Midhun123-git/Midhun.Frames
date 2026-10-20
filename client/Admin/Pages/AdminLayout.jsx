@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react"
+﻿import React, { useEffect, useState } from "react"
 import { Outlet } from "react-router-dom"
 import AdminSidebar from "../Components/AdminSidebar"
-import api from "../../../server/Api/api.js"
+import api from "../../src/api/api.js"
 
 const AdminLayout = () => {
   const [theme, setTheme] = useState(

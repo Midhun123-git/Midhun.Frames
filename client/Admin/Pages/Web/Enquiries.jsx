@@ -1,6 +1,6 @@
-
+﻿
 import React, { useEffect, useState } from "react"
-import api from "../../../../server/Api/api.js"
+import api from "../../../src/api/api.js"
 import {
   Search,
   Plus,
@@ -672,7 +672,7 @@ const Enquiries = () => {
                     </p>
 
                     <p className="mt-2 text-lg">
-                      ₹{Number(
+                      â‚¹{Number(
                         selectedEnquiry.totalAmount || 0
                       ).toLocaleString("en-IN")}
                     </p>
@@ -684,7 +684,7 @@ const Enquiries = () => {
                     </p>
 
                     <p className="mt-2 text-lg">
-                      ₹{Number(
+                      â‚¹{Number(
                         selectedEnquiry.advanceAmount || 0
                       ).toLocaleString("en-IN")}
                     </p>
@@ -696,7 +696,7 @@ const Enquiries = () => {
                     </p>
 
                     <p className="mt-2 text-lg">
-                      ₹{Number(
+                      â‚¹{Number(
                         selectedEnquiry.paidAmount || 0
                       ).toLocaleString("en-IN")}
                     </p>
@@ -908,4 +908,5 @@ const Enquiries = () => {
 }
 
 export default Enquiries
+
 

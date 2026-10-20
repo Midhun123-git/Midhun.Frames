@@ -1,7 +1,7 @@
-// src/Admin/Pages/About.jsx
+﻿// src/Admin/Pages/About.jsx
 
 import { useEffect, useRef, useState } from "react"
-import api from "../../../../server/Api/api.js"
+import api from "../../../src/api/api.js"
 import {
   Upload,
   Trash2,

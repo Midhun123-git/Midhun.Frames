@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+﻿import React, { useEffect, useState } from "react"
 import {
   Save,
   User,
@@ -10,7 +10,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react"
-import api from "../../../server/Api/api.js"
+import api from "../../src/api/api.js"
 
 const getAuthConfig = () => {
   const adminToken = localStorage.getItem("adminToken")

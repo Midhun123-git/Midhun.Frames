@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react"
-import api from "../../../../server/Api/api.js"
+﻿import React, { useEffect, useMemo, useState } from "react"
+import api from "../../../src/api/api.js"
 import {
   Plus,
   Search,
@@ -505,12 +505,12 @@ const Projects = () => {
   // ==========================================
 
   const formatDate = (date) => {
-    if (!date) return "—"
+    if (!date) return "â€”"
 
     const parsedDate = new Date(date)
 
     if (Number.isNaN(parsedDate.getTime())) {
-      return "—"
+      return "â€”"
     }
 
     return parsedDate.toLocaleDateString(
@@ -582,7 +582,7 @@ const Projects = () => {
 
         <StatCard
           label="Project Value"
-          value={`₹${totalValue.toLocaleString("en-IN")}`}
+          value={`â‚¹${totalValue.toLocaleString("en-IN")}`}
           icon={<IndianRupee size={18} />}
         />
 
@@ -713,7 +713,7 @@ const Projects = () => {
                   </p>
 
                   <p className="text-sm text-white/60">
-                    ₹
+                    â‚¹
                     {Number(
                       project.budget || 0
                     ).toLocaleString("en-IN")}
@@ -831,7 +831,7 @@ const Projects = () => {
 
                     <div className="flex items-center gap-3">
                       <IndianRupee size={15} />
-                      ₹
+                      â‚¹
                       {Number(
                         project.budget || 0
                       ).toLocaleString("en-IN")}
@@ -1194,7 +1194,7 @@ const Projects = () => {
                   label="Client"
                   value={
                     selectedProject.clientName ||
-                    "—"
+                    "â€”"
                   }
                 />
 
@@ -1203,7 +1203,7 @@ const Projects = () => {
                   label="Company"
                   value={
                     selectedProject.company ||
-                    "—"
+                    "â€”"
                   }
                 />
 
@@ -1212,7 +1212,7 @@ const Projects = () => {
                   label="Email"
                   value={
                     selectedProject.email ||
-                    "—"
+                    "â€”"
                   }
                 />
 
@@ -1221,7 +1221,7 @@ const Projects = () => {
                   label="Phone"
                   value={
                     selectedProject.phone ||
-                    "—"
+                    "â€”"
                   }
                 />
 
@@ -1230,7 +1230,7 @@ const Projects = () => {
                   label="Service"
                   value={
                     selectedProject.service ||
-                    "—"
+                    "â€”"
                   }
                 />
 
@@ -1253,7 +1253,7 @@ const Projects = () => {
                 <Detail
                   icon={<IndianRupee size={15} />}
                   label="Budget"
-                  value={`₹${Number(
+                  value={`â‚¹${Number(
                     selectedProject.budget || 0
                   ).toLocaleString("en-IN")}`}
                 />

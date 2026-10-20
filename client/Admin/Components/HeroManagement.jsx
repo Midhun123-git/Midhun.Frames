@@ -1,4 +1,4 @@
-
+﻿
 import { useEffect, useState } from "react";
 import {
   ImagePlus,
@@ -14,12 +14,12 @@ import {
   LoaderCircle,
 } from "lucide-react";
 
-import api from "../../../server/Api/api.js";
+import api from "../../src/api/api.js";
 
 const initialForm = {
   eyebrow: "PHOTOGRAPHY & FILM",
   heading: "Midhun\nFrames",
-  subheading: "Cinematic Reality × Personal Imagination",
+  subheading: "Cinematic Reality Ã— Personal Imagination",
   description:
     "Stories captured with creativity, emotion, and a cinematic eye.",
 };
@@ -339,7 +339,7 @@ export default function HeroManagement() {
                       name="subheading"
                       value={form.subheading}
                       onChange={handleChange}
-                      placeholder="Cinematic Reality × Personal Imagination"
+                      placeholder="Cinematic Reality Ã— Personal Imagination"
                       className={inputClass}
                     />
                   </div>
@@ -463,7 +463,7 @@ export default function HeroManagement() {
                     </span>
 
                     <span className="mt-2 text-xs text-slate-500">
-                      Image files only · Maximum 20 MB
+                      Image files only Â· Maximum 20 MB
                     </span>
 
                     <input
@@ -548,3 +548,4 @@ export default function HeroManagement() {
     </div>
   );
 }
+

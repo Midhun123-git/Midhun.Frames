@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react"
-import api from "../../../../server/Api/api.js"
+﻿import React, { useEffect, useState } from "react"
+import api from "../../../src/api/api.js"
 import {
   Search,
   Plus,
@@ -703,7 +703,7 @@ const Bookings = () => {
                     </p>
 
                     <p className="mt-2">
-                      ₹{selectedBooking.totalAmount || 0}
+                      â‚¹{selectedBooking.totalAmount || 0}
                     </p>
                   </div>
 
@@ -713,7 +713,7 @@ const Bookings = () => {
                     </p>
 
                     <p className="mt-2">
-                      ₹{selectedBooking.advanceAmount || 0}
+                      â‚¹{selectedBooking.advanceAmount || 0}
                     </p>
                   </div>
 
@@ -723,7 +723,7 @@ const Bookings = () => {
                     </p>
 
                     <p className="mt-2">
-                      ₹{selectedBooking.balanceAmount || 0}
+                      â‚¹{selectedBooking.balanceAmount || 0}
                     </p>
                   </div>
                 </div>
