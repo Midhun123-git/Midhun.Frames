@@ -1,0 +1,253 @@
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #050505;
+  font-family: Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+a {
+  font-family: inherit;
+}
+/* =========================================================
+   MIDHUN FRAMES ADMIN THEME SYSTEM
+   ========================================================= */
+
+/* =========================
+   DARK THEME
+   ========================= */
+
+[data-admin-theme="dark"] {
+  background: #050505;
+  color: white;
+}
+
+/* =========================
+   LIGHT THEME
+   ========================= */
+
+[data-admin-theme="light"] {
+  background: #f7f7f5;
+  color: #111111;
+}
+
+/* Main admin background */
+
+[data-admin-theme="light"] .admin-root,
+[data-admin-theme="light"] .admin-main {
+  background: #f7f7f5 !important;
+  color: #111111 !important;
+}
+
+/* =========================================================
+   BACKGROUNDS
+   ========================================================= */
+
+[data-admin-theme="light"] .bg-\[\#050505\] {
+  background-color: #ffffff !important;
+}
+
+[data-admin-theme="light"] .bg-black {
+  background-color: #ffffff !important;
+}
+
+[data-admin-theme="light"] .bg-white\/\[0\.02\] {
+  background-color: rgba(0, 0, 0, 0.025) !important;
+}
+
+[data-admin-theme="light"] .bg-white\/\[0\.025\] {
+  background-color: rgba(0, 0, 0, 0.025) !important;
+}
+
+[data-admin-theme="light"] .bg-white\/\[0\.03\] {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+[data-admin-theme="light"] .bg-white\/\[0\.04\] {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-admin-theme="light"] .bg-white\/\[0\.08\] {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-admin-theme="light"] .bg-white\/\[0\.1\] {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* =========================================================
+   TEXT
+   ========================================================= */
+
+[data-admin-theme="light"] .text-white {
+  color: #111111 !important;
+}
+
+[data-admin-theme="light"] .text-white\/80 {
+  color: rgba(17, 17, 17, 0.8) !important;
+}
+
+[data-admin-theme="light"] .text-white\/70 {
+  color: rgba(17, 17, 17, 0.7) !important;
+}
+
+[data-admin-theme="light"] .text-white\/60 {
+  color: rgba(17, 17, 17, 0.6) !important;
+}
+
+[data-admin-theme="light"] .text-white\/50 {
+  color: rgba(17, 17, 17, 0.5) !important;
+}
+
+[data-admin-theme="light"] .text-white\/45 {
+  color: rgba(17, 17, 17, 0.45) !important;
+}
+
+[data-admin-theme="light"] .text-white\/40 {
+  color: rgba(17, 17, 17, 0.4) !important;
+}
+
+[data-admin-theme="light"] .text-white\/35 {
+  color: rgba(17, 17, 17, 0.35) !important;
+}
+
+[data-admin-theme="light"] .text-white\/30 {
+  color: rgba(17, 17, 17, 0.3) !important;
+}
+
+[data-admin-theme="light"] .text-white\/25 {
+  color: rgba(17, 17, 17, 0.25) !important;
+}
+
+[data-admin-theme="light"] .text-white\/20 {
+  color: rgba(17, 17, 17, 0.2) !important;
+}
+
+/* =========================================================
+   BORDERS
+   ========================================================= */
+
+[data-admin-theme="light"] .border-white\/10 {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-admin-theme="light"] .border-white\/15 {
+  border-color: rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-admin-theme="light"] .border-white\/20 {
+  border-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+/* =========================================================
+   DIVIDERS
+   ========================================================= */
+
+[data-admin-theme="light"] .divide-white\/10 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* =========================================================
+   INPUTS
+   ========================================================= */
+
+[data-admin-theme="light"] .input-style {
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  background: rgba(0, 0, 0, 0.025) !important;
+  color: #111111 !important;
+}
+
+[data-admin-theme="light"] .input-style::placeholder {
+  color: rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Generic inputs */
+
+[data-admin-theme="light"] input,
+[data-admin-theme="light"] textarea,
+[data-admin-theme="light"] select {
+  color: #111111;
+}
+
+[data-admin-theme="light"] input::placeholder,
+[data-admin-theme="light"] textarea::placeholder {
+  color: rgba(0, 0, 0, 0.35);
+}
+
+/* =========================================================
+   COMMON DARK CARDS
+   ========================================================= */
+
+[data-admin-theme="light"] .bg-\[\#0a0a0a\] {
+  background-color: #ffffff !important;
+}
+
+[data-admin-theme="light"] .bg-\[\#0b0b0b\] {
+  background-color: #ffffff !important;
+}
+
+[data-admin-theme="light"] .bg-\[\#111111\] {
+  background-color: #ffffff !important;
+}
+
+/* =========================================================
+   HOVER STATES
+   ========================================================= */
+
+[data-admin-theme="light"] .hover\:bg-white\/\[0\.025\]:hover {
+  background-color: rgba(0, 0, 0, 0.025) !important;
+}
+
+[data-admin-theme="light"] .hover\:bg-white\/\[0\.03\]:hover {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+[data-admin-theme="light"] .hover\:text-white:hover {
+  color: #111111 !important;
+}
+
+/* =========================================================
+   SIDEBAR SCROLLBAR
+   ========================================================= */
+
+[data-admin-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+[data-admin-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* =========================================================
+   SMOOTH THEME TRANSITION
+   ========================================================= */
+
+.admin-root,
+.admin-root *,
+.admin-main {
+  transition-property:
+    background-color,
+    border-color,
+    color;
+  transition-duration: 180ms;
+  transition-timing-function: ease;
+}
