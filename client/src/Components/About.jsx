@@ -589,7 +589,7 @@ function About() {
 
                 <div className="mt-3 text-center">
                   <p className="text-[8px] uppercase tracking-[0.25em] text-white/40">
-                    Roll 001 Â· scroll or drag
+                    Roll 001 · scroll or drag
                   </p>
                 </div>
               </motion.div>
