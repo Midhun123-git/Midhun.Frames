@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+﻿import { useCallback, useEffect, useMemo, useState } from "react"
 import { motion } from "framer-motion"
 import {
   CalendarDays,
@@ -10,7 +10,7 @@ import {
   MessageSquare,
   X,
 } from "lucide-react"
-import api from "../../../server/Api/api.js"
+import api from "../api/api.js"
 
 const getUserConfig = () => {
   const userToken = localStorage.getItem("userToken")
@@ -39,7 +39,7 @@ const loadRazorpayScript = () =>
   })
 
 const formatAmount = (amount) =>
-  `₹${Number(amount || 0).toLocaleString("en-IN")}`
+  `â‚¹${Number(amount || 0).toLocaleString("en-IN")}`
 
 const formatDate = (date) => {
   if (!date) return "-"
@@ -482,7 +482,7 @@ function MyBookings({ onClose }) {
             <span className="h-px w-7 bg-[#c9a875]/60" />
 
             <span className="text-[8px] uppercase tracking-[3.5px] text-[#c9a875]/75">
-              Midhun Frames · Client Portal
+              Midhun Frames Â· Client Portal
             </span>
           </div>
 
@@ -695,7 +695,7 @@ function PhotographyDetails({ booking, pay, payingKey }) {
         eyebrow="Photography booking"
         icon={<CameraIcon />}
         title={booking.packageName || booking.eventType || "Photography Booking"}
-        subtitle={`Booking ID · ${booking._id}`}
+        subtitle={`Booking ID Â· ${booking._id}`}
         status={booking.status || "Pending"}
       />
 
@@ -770,7 +770,7 @@ function WebDetails({ enquiry, pay, payingKey }) {
         eyebrow="Web development"
         icon={<Globe size={14} strokeWidth={1.2} />}
         title={enquiry.project || "Web Design Enquiry"}
-        subtitle={`Submitted · ${formatDate(enquiry.createdAt)}`}
+        subtitle={`Submitted Â· ${formatDate(enquiry.createdAt)}`}
         status={enquiry.status || "New"}
       />
 
@@ -845,7 +845,7 @@ function WebDetails({ enquiry, pay, payingKey }) {
               </p>
 
               <p className="mt-3 text-[11px] leading-[1.9] text-[#e5d4cc]/40">
-              We’ll review your enquiry and contact you to discuss your project, requirements, timeline, and pricing. Once your quote is ready, you’ll be able to view the project amount and make the payment here.
+              Weâ€™ll review your enquiry and contact you to discuss your project, requirements, timeline, and pricing. Once your quote is ready, youâ€™ll be able to view the project amount and make the payment here.
               </p>
             </div>
           </div>

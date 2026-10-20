@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowUpRight,
@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   ChevronRight,
 } from "lucide-react";
-import api from "../../../server/Api/api.js";
+import api from "../api/api.js";
 
 const container = {
   hidden: {},
@@ -270,7 +270,7 @@ function Frame({ scene, number, pick }) {
       </div>
 
       <div className="mt-1.5 flex items-center justify-between text-[8px] tracking-[0.18em] text-[#c9a96a]/60">
-        <span>▸ {String(number).padStart(2, "0")}A</span>
+        <span>â–¸ {String(number).padStart(2, "0")}A</span>
         <span>MF 400</span>
       </div>
 
@@ -609,7 +609,7 @@ export default function Reviews() {
 
   const stats = useMemo(() => {
     if (!reviews.length) {
-      return { total: 0, average: "—", fiveStar: 0 };
+      return { total: 0, average: "â€”", fiveStar: 0 };
     }
 
     const totalRating = reviews.reduce(
@@ -818,7 +818,7 @@ export default function Reviews() {
                   </div>
 
                   <p className="mt-8 text-xl font-light leading-relaxed text-white/85 sm:text-2xl md:text-3xl">
-                    “{featuredReview.review}”
+                    â€œ{featuredReview.review}â€
                   </p>
 
                   {featuredReview.adminReply && (
@@ -841,7 +841,7 @@ export default function Reviews() {
                       <p className="mt-1 text-xs text-white/40">
                         {[featuredReview.createdAt, featuredReview.service]
                           .filter(Boolean)
-                          .join(" · ")}
+                          .join(" Â· ")}
                       </p>
                     </div>
                     <CheckCircle2
@@ -946,7 +946,7 @@ export default function Reviews() {
                         <p className="mt-1 truncate text-xs text-white/40">
                           {[review.service, review.createdAt]
                             .filter(Boolean)
-                            .join(" · ")}
+                            .join(" Â· ")}
                         </p>
                       </div>
 

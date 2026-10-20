@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   useCallback,
   useEffect,
   useId,
@@ -22,7 +22,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import api from "../../../server/Api/api.js";
+import api from "../api/api.js";
 
 const MAX_SHOTS = 5;
 const AUTO_SHOT_DELAY = 2400;
@@ -587,7 +587,7 @@ export default function Hero() {
         <div className="pointer-events-none absolute left-7 right-7 top-[100px] z-10 flex items-start justify-between gap-4 sm:left-12 sm:right-12 sm:top-[108px] md:left-16 md:right-16">
           <div>
             <p className="text-[9px] uppercase tracking-[0.3em] text-white/80 sm:text-[10px]">
-              {heroContent?.eyebrow || "Photography · Films · Stories"}
+              {heroContent?.eyebrow || "Photography Â· Films Â· Stories"}
             </p>
             <div className="mt-3 h-px w-12 bg-[#c9a875]" />
           </div>

@@ -1,8 +1,8 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 import { motion } from "framer-motion"
 import { X, Eye, EyeOff } from "lucide-react"
 import { GoogleLogin } from "@react-oauth/google"
-import api from "../../../server/Api/api.js"
+import api from "../api/api.js"
 
 function Auth({ onClose }) {
   const [mode, setMode] = useState("login")

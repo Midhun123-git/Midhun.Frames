@@ -1,10 +1,10 @@
-import React, {
+﻿import React, {
   useEffect,
   useMemo,
   useState,
 } from "react"
 
-import api from "../../../server/Api/api.js"
+import api from "../api/api.js"
 
 import {
   Search,
@@ -599,13 +599,13 @@ const Payments = () => {
   // ==========================================
 
   const formatAmount = (amount) => {
-    return `₹${Number(
+    return `â‚¹${Number(
       amount || 0
     ).toLocaleString("en-IN")}`
   }
 
   const formatDate = (date) => {
-    if (!date) return "—"
+    if (!date) return "â€”"
 
     const parsedDate =
       new Date(date)
@@ -615,7 +615,7 @@ const Payments = () => {
         parsedDate.getTime()
       )
     ) {
-      return "—"
+      return "â€”"
     }
 
     return parsedDate.toLocaleDateString(
@@ -1255,7 +1255,7 @@ const Payments = () => {
                     label="Client"
                     value={
                       selectedPayment.clientName ||
-                      "—"
+                      "â€”"
                     }
                   />
 
@@ -1266,7 +1266,7 @@ const Payments = () => {
                     label="Email"
                     value={
                       selectedPayment.email ||
-                      "—"
+                      "â€”"
                     }
                   />
 
@@ -1277,7 +1277,7 @@ const Payments = () => {
                     label="Phone"
                     value={
                       selectedPayment.phone ||
-                      "—"
+                      "â€”"
                     }
                   />
 
@@ -1288,7 +1288,7 @@ const Payments = () => {
                     label="Payment Type"
                     value={
                       selectedPayment.paymentType ||
-                      "—"
+                      "â€”"
                     }
                   />
 
@@ -1299,7 +1299,7 @@ const Payments = () => {
                     label="Method"
                     value={
                       selectedPayment.paymentMethod ||
-                      "—"
+                      "â€”"
                     }
                   />
 
@@ -1339,7 +1339,7 @@ const Payments = () => {
                     }
                     value={
                       selectedPayment.sourceId ||
-                      "—"
+                      "â€”"
                     }
                   />
                 </div>

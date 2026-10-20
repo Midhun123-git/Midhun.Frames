@@ -1,6 +1,6 @@
-import { useRef, useState, useEffect } from "react"
+﻿import { useRef, useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import api from "../../../server/Api/api.js"
+import api from "../api/api.js"
 
 const fStops = [1.4, 2, 2.8, 4, 5.6, 8, 11, 16]
 
@@ -556,7 +556,7 @@ function About() {
                     aria-label="Previous frame"
                     className={ctrlBtn}
                   >
-                    ↑
+                    â†‘
                   </button>
 
                   <button
@@ -565,7 +565,7 @@ function About() {
                     aria-label={reelPaused ? "Play reel" : "Pause reel"}
                     className={ctrlBtn}
                   >
-                    {reelPaused ? "▶" : "❚❚"}
+                    {reelPaused ? "â–¶" : "âšâš"}
                   </button>
 
                   <button
@@ -574,7 +574,7 @@ function About() {
                     aria-label="Next frame"
                     className={ctrlBtn}
                   >
-                    ↓
+                    â†“
                   </button>
 
                   <button
@@ -589,7 +589,7 @@ function About() {
 
                 <div className="mt-3 text-center">
                   <p className="text-[8px] uppercase tracking-[0.25em] text-white/40">
-                    Roll 001 · scroll or drag
+                    Roll 001 Â· scroll or drag
                   </p>
                 </div>
               </motion.div>
@@ -625,7 +625,7 @@ function About() {
             </p>
 
             <p className="mt-3 text-[11px] text-[#e5d4cc]/60">
-              Photography · Films · Visual Stories
+              Photography Â· Films Â· Visual Stories
             </p>
           </div>
 
@@ -665,7 +665,7 @@ function About() {
                 <span>View all work</span>
 
                 <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e5d4cc]/20 transition-all duration-500 group-hover:translate-x-2 group-hover:border-[#e5d4cc]/60">
-                  →
+                  â†’
                 </span>
               </a>
             </div>
@@ -745,7 +745,7 @@ function About() {
                         onClick={() => setGalleryOpen(false)}
                         className="p-2 text-[9px] uppercase tracking-[0.25em] text-[#e5d4cc]/60 transition-colors duration-300 hover:text-[#e5d4cc]"
                       >
-                        Close ✕
+                        Close âœ•
                       </button>
                     </div>
 
@@ -790,7 +790,7 @@ function About() {
                         aria-label="Scroll left"
                         className="absolute left-0 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#e5d4cc]/20 bg-[#050505]/80 text-[#e5d4cc]/70 backdrop-blur transition-colors duration-300 hover:border-[#e5d4cc]/60 hover:text-[#e5d4cc] sm:flex"
                       >
-                        ←
+                        â†
                       </button>
 
                       <button
@@ -799,7 +799,7 @@ function About() {
                         aria-label="Scroll right"
                         className="absolute right-0 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#e5d4cc]/20 bg-[#050505]/80 text-[#e5d4cc]/70 backdrop-blur transition-colors duration-300 hover:border-[#e5d4cc]/60 hover:text-[#e5d4cc] sm:flex"
                       >
-                        →
+                        â†’
                       </button>
                     </div>
                   </motion.div>
@@ -810,7 +810,7 @@ function About() {
                 <p className="mt-4 text-center text-[9px] uppercase tracking-[0.2em] text-[#e5d4cc]/35">
                   <span className="sm:hidden">Tap to view all</span>
                   <span className="hidden sm:inline">
-                    Hover to preview · Click to view all
+                    Hover to preview Â· Click to view all
                   </span>
                 </p>
               )}
@@ -820,7 +820,7 @@ function About() {
 
         <div className="mt-[70px] flex justify-between text-[8px] uppercase tracking-[0.25em] text-[#e5d4cc]/25 lg:mt-[90px]">
           <span>Midhun Frames</span>
-          <span>01 — About</span>
+          <span>01 â€” About</span>
         </div>
       </div>
     </section>

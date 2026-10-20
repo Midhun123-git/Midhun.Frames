@@ -1,6 +1,6 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 import { motion } from "framer-motion"
-import api from "../../../server/Api/api.js"
+import api from "../api/api.js"
 
 const fadeUp = {
   hidden: {
@@ -642,7 +642,7 @@ function Contact() {
                       group-hover:translate-x-2
                     "
                   >
-                    →
+                    â†’
                   </span>
                 )}
               </motion.button>
@@ -672,8 +672,8 @@ function Contact() {
           "
         >
           <span>Midhun Frames</span>
-          <span>Photography · Films · Visual Stories</span>
-          <span>05 — Contact</span>
+          <span>Photography Â· Films Â· Visual Stories</span>
+          <span>05 â€” Contact</span>
         </motion.div>
       </div>
     </section>

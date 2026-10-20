@@ -1,4 +1,4 @@
-
+﻿
 import { useEffect, useRef, useState } from "react"
 import {
   Menu,
@@ -12,7 +12,7 @@ import {
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { AnimatePresence, motion } from "framer-motion"
-import api from "../../../server/Api/api.js"
+import api from "../api/api.js"
 
 const NAV_LINKS = [
   { label: "Portfolio", href: "#portfolio", number: "01" },
@@ -546,7 +546,7 @@ function Header({ onLoginClick, onBookingsClick }) {
               </h2>
 
               <p className="mt-2 text-[10px] uppercase tracking-[1.5px] text-[#e5d4cc]/40">
-                Cinematic reality × personal imagination
+                Cinematic reality Ã— personal imagination
               </p>
             </motion.div>
 
@@ -601,7 +601,7 @@ function Header({ onLoginClick, onBookingsClick }) {
               <div className="mb-4 h-px bg-[#e5d4cc]/10" />
 
               <p className="text-[9px] uppercase tracking-[2px] text-[#e5d4cc]/30">
-                Photography · Films · Stories
+                Photography Â· Films Â· Stories
               </p>
             </motion.div>
           </motion.nav>
@@ -612,3 +612,4 @@ function Header({ onLoginClick, onBookingsClick }) {
 }
 
 export default Header
+

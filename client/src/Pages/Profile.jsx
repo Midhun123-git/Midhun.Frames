@@ -1,4 +1,4 @@
-
+﻿
 import { useEffect, useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   CalendarDays,
 } from "lucide-react"
-import api from "../../../server/Api/api.js"
+import api from "../api/api.js"
 
 const outlineBtnClass = `
   flex items-center justify-center gap-2
@@ -842,3 +842,4 @@ function AccountRow({ label, value }) {
 }
 
 export default Profile
+

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react"
+﻿import { useEffect, useMemo, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import api from "../../../server/Api/api.js"
+import api from "../api/api.js"
 import {
   X,
   Play,
@@ -613,7 +613,7 @@ function Portfolio() {
                 See Full Gallery
 
                 <span className="text-sm transition-transform duration-300 group-hover:translate-x-1">
-                  →
+                  â†’
                 </span>
               </a>
             </motion.div>
@@ -812,7 +812,7 @@ function Portfolio() {
                 </div>
 
                 <span className="text-[7px] uppercase tracking-[0.2em] text-white/20">
-                  Use ← → to navigate
+                  Use â† â†’ to navigate
                 </span>
               </div>
             </motion.div>
