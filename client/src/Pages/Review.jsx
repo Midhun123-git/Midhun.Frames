@@ -1,4 +1,5 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+﻿
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowUpRight,
@@ -46,8 +47,7 @@ const formatDate = (date) => {
 };
 
 /* ------------------------------------------------------------------ */
-/* HERO BACKDROP: a contact sheet. Film strips drift across a light    */
-/* table and the photographer's favourites are marked as picks.        */
+/* HERO BACKDROP                                                       */
 /* ------------------------------------------------------------------ */
 
 const FRAME_W = 210;
@@ -75,7 +75,6 @@ const sprocketStyle = {
     "repeating-linear-gradient(90deg, rgba(201,169,106,0.32) 0px, rgba(201,169,106,0.32) 9px, transparent 9px, transparent 21px)",
 };
 
-// Gradients shared by every frame, defined once.
 function SceneDefs() {
   return (
     <svg
@@ -91,19 +90,23 @@ function SceneDefs() {
           <stop offset="55%" stopColor="#8a6a3c" />
           <stop offset="100%" stopColor="#e0c28b" />
         </linearGradient>
+
         <linearGradient id="fs-dusk" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#0e0e12" />
           <stop offset="60%" stopColor="#3b2f2a" />
           <stop offset="100%" stopColor="#c9a96a" />
         </linearGradient>
+
         <linearGradient id="fs-night" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#0a0a0a" />
           <stop offset="100%" stopColor="#2b2218" />
         </linearGradient>
+
         <linearGradient id="fs-warm" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#e0c28b" />
           <stop offset="100%" stopColor="#6b4f2a" />
         </linearGradient>
+
         <radialGradient id="fs-glow" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="#f3dfb0" stopOpacity="0.95" />
           <stop offset="100%" stopColor="#c9a96a" stopOpacity="0" />
@@ -270,11 +273,10 @@ function Frame({ scene, number, pick }) {
       </div>
 
       <div className="mt-1.5 flex items-center justify-between text-[8px] tracking-[0.18em] text-[#c9a96a]/60">
-        <span>â–¸ {String(number).padStart(2, "0")}A</span>
+        <span>▸ {String(number).padStart(2, "0")}A</span>
         <span>MF 400</span>
       </div>
 
-      {/* Grease-pencil pick mark */}
       {pick && (
         <div
           className="pointer-events-none absolute -left-1.5 -top-1.5"
@@ -310,7 +312,6 @@ function FilmStrip({ offset, reverse, duration, pickAt, reduceMotion }) {
     (_, i) => sceneOrder[(i + offset) % sceneOrder.length]
   );
 
-  // Three copies so the loop never shows a gap, even on wide screens.
   const frames = [0, 1, 2].flatMap((copy) =>
     base.map((scene, i) => ({
       key: `${copy}-${i}`,
@@ -355,28 +356,24 @@ function HeroBackdrop() {
     <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
       <SceneDefs />
 
-      {/* Light table glow */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_60%_50%,rgba(224,194,139,0.16),transparent_60%)]" />
 
-      {/* Tilted wall of film strips */}
       <div className="absolute -left-[12%] -right-[12%] top-1/2 flex -translate-y-1/2 -rotate-[7deg] flex-col gap-6 opacity-45 md:opacity-65">
         {filmRows.map((row, index) => (
           <FilmStrip key={index} {...row} reduceMotion={reduceMotion} />
         ))}
       </div>
 
-      {/* Light leaks */}
       <motion.div
         className="absolute -right-[15%] -top-[25%] h-[70vw] max-h-[900px] w-[70vw] max-w-[900px] rounded-full bg-[radial-gradient(circle,rgba(255,160,70,0.30),transparent_65%)] mix-blend-screen blur-2xl"
         animate={reduceMotion ? undefined : { opacity: [0.5, 0.9, 0.5] }}
         transition={{ duration: 9, ease: "easeInOut", repeat: Infinity }}
       />
+
       <div className="absolute -bottom-[30%] -left-[10%] h-[50vw] max-h-[700px] w-[50vw] max-w-[700px] rounded-full bg-[radial-gradient(circle,rgba(201,169,106,0.20),transparent_65%)] mix-blend-screen blur-2xl" />
 
-      {/* Film grain */}
       <div className="absolute inset-0 opacity-[0.07] mix-blend-overlay bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/></filter><rect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/></svg>')]" />
 
-      {/* Keep headline readable and blend into next section */}
       <div className="absolute inset-0 bg-gradient-to-r from-[#080808]/95 via-[#080808]/60 to-[#080808]/15" />
       <div className="absolute inset-0 bg-gradient-to-b from-[#080808]/60 via-transparent to-[#080808]" />
     </div>
@@ -420,8 +417,6 @@ function ReviewAvatar({ review, size = "h-12 w-12" }) {
     setImageError(false);
   }, [image]);
 
-  // Viewfinder frame: square photo with gold focus brackets.
-  // Brackets sit slightly outside and snap in (focus lock) on hover.
   const bracket =
     "pointer-events-none absolute h-2.5 w-2.5 border-[#e0c28b] transition-all duration-300";
 
@@ -443,18 +438,10 @@ function ReviewAvatar({ review, size = "h-12 w-12" }) {
         )}
       </div>
 
-      <span
-        className={`${bracket} -left-1.5 -top-1.5 border-l border-t group-hover:-left-0.5 group-hover:-top-0.5`}
-      />
-      <span
-        className={`${bracket} -right-1.5 -top-1.5 border-r border-t group-hover:-right-0.5 group-hover:-top-0.5`}
-      />
-      <span
-        className={`${bracket} -bottom-1.5 -left-1.5 border-b border-l group-hover:-bottom-0.5 group-hover:-left-0.5`}
-      />
-      <span
-        className={`${bracket} -bottom-1.5 -right-1.5 border-b border-r group-hover:-bottom-0.5 group-hover:-right-0.5`}
-      />
+      <span className={`${bracket} -left-1.5 -top-1.5 border-l border-t group-hover:-left-0.5 group-hover:-top-0.5`} />
+      <span className={`${bracket} -right-1.5 -top-1.5 border-r border-t group-hover:-right-0.5 group-hover:-top-0.5`} />
+      <span className={`${bracket} -bottom-1.5 -left-1.5 border-b border-l group-hover:-bottom-0.5 group-hover:-left-0.5`} />
+      <span className={`${bracket} -bottom-1.5 -right-1.5 border-b border-r group-hover:-bottom-0.5 group-hover:-right-0.5`} />
     </div>
   );
 }
@@ -470,7 +457,7 @@ function SectionLabel({ children }) {
   );
 }
 
-export default function Reviews() {
+export default function Reviews({ onLoginClick }) {
   const [reviews, setReviews] = useState([]);
   const [featuredReview, setFeaturedReview] = useState(null);
   const [loadingReviews, setLoadingReviews] = useState(true);
@@ -792,11 +779,7 @@ export default function Reviews() {
 
                   <div className="relative mt-16">
                     <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-[#c9a96a]/25 bg-black/20">
-                      <Quote
-                        size={30}
-                        strokeWidth={1}
-                        className="text-[#c9a96a]"
-                      />
+                      <Quote size={30} strokeWidth={1} className="text-[#c9a96a]" />
                     </div>
 
                     <p className="text-xs uppercase tracking-[0.2em] text-white/40">
@@ -818,7 +801,7 @@ export default function Reviews() {
                   </div>
 
                   <p className="mt-8 text-xl font-light leading-relaxed text-white/85 sm:text-2xl md:text-3xl">
-                    â€œ{featuredReview.review}â€
+                    “{featuredReview.review}”
                   </p>
 
                   {featuredReview.adminReply && (
@@ -841,13 +824,10 @@ export default function Reviews() {
                       <p className="mt-1 text-xs text-white/40">
                         {[featuredReview.createdAt, featuredReview.service]
                           .filter(Boolean)
-                          .join(" Â· ")}
+                          .join(" · ")}
                       </p>
                     </div>
-                    <CheckCircle2
-                      size={17}
-                      className="ml-auto shrink-0 text-[#c9a96a]"
-                    />
+                    <CheckCircle2 size={17} className="ml-auto shrink-0 text-[#c9a96a]" />
                   </div>
                 </div>
               </div>
@@ -925,11 +905,7 @@ export default function Reviews() {
                   </div>
 
                   <div className="mt-7 flex-1">
-                    <Quote
-                      size={21}
-                      strokeWidth={1}
-                      className="mb-3 text-[#c9a96a]/65"
-                    />
+                    <Quote size={21} strokeWidth={1} className="mb-3 text-[#c9a96a]/65" />
                     <p className="text-base leading-7 text-white/75 sm:text-lg sm:leading-8">
                       {review.review}
                     </p>
@@ -946,7 +922,7 @@ export default function Reviews() {
                         <p className="mt-1 truncate text-xs text-white/40">
                           {[review.service, review.createdAt]
                             .filter(Boolean)
-                            .join(" Â· ")}
+                            .join(" · ")}
                         </p>
                       </div>
 
@@ -971,11 +947,7 @@ export default function Reviews() {
             </motion.div>
           ) : (
             <div className="rounded-sm border border-white/10 bg-[#0e0e0e] px-6 py-12 text-center sm:px-10 sm:py-16">
-              <MessageCircle
-                size={28}
-                className="mx-auto text-[#c9a96a]"
-                strokeWidth={1}
-              />
+              <MessageCircle size={28} className="mx-auto text-[#c9a96a]" strokeWidth={1} />
               <h3 className="mt-5 text-xl font-light sm:text-2xl">
                 We'd love to hear your story.
               </h3>
@@ -1042,9 +1014,7 @@ export default function Reviews() {
                         <Icon size={16} className="text-[#c9a96a]" />
                       </div>
                       <div>
-                        <p className="text-sm text-white/80">
-                          {feature.title}
-                        </p>
+                        <p className="text-sm text-white/80">{feature.title}</p>
                         <p className="mt-1 text-xs leading-5 text-white/40">
                           {feature.text}
                         </p>
@@ -1070,13 +1040,18 @@ export default function Reviews() {
                   so you can focus on telling us about your experience.
                 </p>
 
-                <a
-                  href="/login"
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof onLoginClick === "function") {
+                      onLoginClick();
+                    }
+                  }}
                   className="mt-7 inline-flex min-h-12 w-fit items-center justify-center gap-3 rounded-sm bg-[#c9a96a] px-6 py-3 text-black transition-colors hover:bg-[#e0c28b]"
                 >
                   <span className="text-xs font-medium">Login to continue</span>
                   <ArrowUpRight size={16} />
-                </a>
+                </button>
 
                 <p className="mt-5 text-xs text-white/30">
                   Already have an account? You're just one step away.
@@ -1187,10 +1162,7 @@ export default function Reviews() {
                     role="status"
                     className="mt-6 flex items-start gap-3 rounded-sm border border-[#c9a96a]/25 bg-[#c9a96a]/[0.06] p-4"
                   >
-                    <CheckCircle2
-                      size={19}
-                      className="mt-0.5 shrink-0 text-[#c9a96a]"
-                    />
+                    <CheckCircle2 size={19} className="mt-0.5 shrink-0 text-[#c9a96a]" />
                     <div>
                       <p className="text-sm text-white/90">
                         Thank you for sharing!
@@ -1277,7 +1249,7 @@ export default function Reviews() {
           </p>
 
           <a
-            
+            href="#share-review"
             className="group mt-8 inline-flex min-h-12 items-center justify-center gap-3 rounded-sm border border-[#c9a96a]/40 px-6 py-3 text-[#e1c58f] transition-all duration-300 hover:border-[#c9a96a] hover:bg-[#c9a96a] hover:text-black"
           >
             <span className="text-xs font-medium">Let's Create Memories</span>
