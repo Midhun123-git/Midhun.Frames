@@ -1,5 +1,5 @@
-﻿
-import { useRef, useState, useEffect } from "react"
+﻿import { useRef, useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import api from "../api/api.js"
 
@@ -7,6 +7,7 @@ const fStops = [1.4, 2, 2.8, 4, 5.6, 8, 11, 16]
 const BASE_SPEED = 22
 const SPEEDS = [0.5, 1, 2]
 const RESUME_DELAY = 1800
+const DRAG_THRESHOLD = 5
 
 const fadeUp = {
   hidden: { opacity: 0, y: 50 },
@@ -16,19 +17,14 @@ const fadeUp = {
 // Optimize Cloudinary images without changing the originals.
 const optimizeImage = (url, width = 700) => {
   if (!url) return ""
+  if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) return url
 
-  if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) {
-    return url
-  }
+  const [base, ...rest] = url.split("/upload/")
+  const path = rest.join("/upload/")
+  // Preserve URLs that already contain Cloudinary transformations.
+  if (/^(?:[^/]+,)*(?:f_auto|q_auto(?::[^/,]+)?|w_\d+|c_limit)(?:,|\/)/.test(path)) return url
 
-  const parts = url.split("/upload/")
-  const existingPath = parts[1] || ""
-
-  if (/^(?:[^/]*,)*(?:f_auto|q_auto(?::[^/,]+)?|w_\d+)(?:,|\/)/.test(existingPath)) {
-    return url
-  }
-
-  return `${parts[0]}/upload/f_auto,q_auto:good,w_${width},c_limit/${existingPath}`
+  return `${base}/upload/f_auto,q_auto:good,w_${width},c_limit/${path}`
 }
 
 function About() {
@@ -46,14 +42,19 @@ function About() {
   // Tracks which photos the user has tapped to reveal in colour.
   const [colourImages, setColourImages] = useState({})
 
+  // Photo popup: null when closed, { items, index } when open.
+  const [viewer, setViewer] = useState(null)
+
   const filmstripRef = useRef(null)
   const reelRef = useRef(null)
   const framesScrollRef = useRef(null)
 
-  const dragState = useRef({ down: false, startX: 0, startScroll: 0 })
+  const dragState = useRef({ down: false, moved: false, startX: 0, startScroll: 0 })
 
   const framesState = useRef({
     dragging: false,
+    moved: false,
+    pointerId: null,
     hovering: false,
     userPaused: false,
     speed: 1,
@@ -79,6 +80,17 @@ function About() {
   const photoColourClass =
     "grayscale-0 sm:grayscale sm:group-hover:grayscale-0"
 
+  const openViewer = (items, index) => setViewer({ items, index })
+  const closeViewer = () => setViewer(null)
+
+  // Next / previous photo, wraps around.
+  const stepViewer = (dir) =>
+    setViewer((v) =>
+      v && v.items.length > 1
+        ? { ...v, index: (v.index + dir + v.items.length) % v.items.length }
+        : v
+    )
+
   useEffect(() => {
     let cancelled = false
 
@@ -102,6 +114,27 @@ function About() {
       cancelled = true
     }
   }, [])
+
+  // Photo popup: lock background scroll + close on Escape.
+  useEffect(() => {
+    if (!viewer) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setViewer(null)
+      else if (e.key === "ArrowRight") stepViewer(1)
+      else if (e.key === "ArrowLeft") stepViewer(-1)
+    }
+
+    window.addEventListener("keydown", onKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener("keydown", onKeyDown)
+    }
+  }, [viewer])
 
   const mainImage = about?.mainImage?.url || ""
   const filmStripImages = about?.filmStripImages || []
@@ -291,18 +324,26 @@ function About() {
 
     const s = framesState.current
     s.dragging = true
+    s.moved = false
+    s.pointerId = e.pointerId
     s.startY = e.clientY
     s.startScroll = framesScrollRef.current?.scrollTop || 0
-
-    e.currentTarget.setPointerCapture?.(e.pointerId)
   }
 
   const handleFramesPointerMove = (e) => {
     const s = framesState.current
     if (!s.dragging || !framesScrollRef.current) return
 
-    framesScrollRef.current.scrollTop =
-      s.startScroll - (e.clientY - s.startY)
+    const dy = e.clientY - s.startY
+
+    // Only treat as a drag after small threshold so plain clicks still reach the photo.
+    if (!s.moved) {
+      if (Math.abs(dy) < DRAG_THRESHOLD) return
+      s.moved = true
+      e.currentTarget.setPointerCapture?.(s.pointerId)
+    }
+
+    framesScrollRef.current.scrollTop = s.startScroll - dy
 
     wrapFramesScroll()
   }
@@ -313,6 +354,16 @@ function About() {
   }
 
   const handleFramesTouch = () => holdAuto()
+
+  // Open popup for a reel frame, ignoring clicks that ended a drag.
+  const handleReelFrameClick = (index) => {
+    if (framesState.current.moved) {
+      framesState.current.moved = false
+      return
+    }
+
+    openViewer(filmStripImages, index % filmStripImages.length)
+  }
 
   const stepReel = (dir) => {
     const el = framesScrollRef.current
@@ -358,6 +409,7 @@ function About() {
   const handleMouseDown = (e) => {
     dragState.current = {
       down: true,
+      moved: false,
       startX: e.pageX,
       startScroll: filmstripRef.current?.scrollLeft || 0,
     }
@@ -371,8 +423,21 @@ function About() {
     if (!dragState.current.down || !filmstripRef.current) return
 
     const dx = e.pageX - dragState.current.startX
+
+    if (Math.abs(dx) > DRAG_THRESHOLD) dragState.current.moved = true
+
     filmstripRef.current.scrollLeft =
       dragState.current.startScroll - dx
+  }
+
+  // Open popup for a gallery photo, ignoring clicks that ended a drag.
+  const handleGalleryPhotoClick = (index) => {
+    if (dragState.current.moved) {
+      dragState.current.moved = false
+      return
+    }
+
+    openViewer(selectedWorkImages, index)
   }
 
   const ctrlBtn =
@@ -442,7 +507,8 @@ function About() {
                 <img
                   src={optimizeImage(mainImage, 600)}
                   alt="Midhun Frames portrait"
-                  loading="lazy"
+                  loading="eager"
+                  fetchPriority="high"
                   decoding="async"
                   draggable={false}
                   className={`block h-full w-full cursor-pointer object-cover transition-all duration-700 ease-out ${interactivePhotoClass("portrait")}`}
@@ -622,7 +688,7 @@ function About() {
                   >
                     <div className="flex flex-col gap-[3px]">
                       {loopedImages.map((image, i) => {
-                        const key = `reel-${image._id || image.publicId || i}`
+                        const frameNumber = (i % filmStripImages.length) + 1
 
                         return (
                           <div
@@ -633,15 +699,16 @@ function About() {
                           >
                             <img
                               src={optimizeImage(image.url, 350)}
-                              alt={`Frame ${(i % filmStripImages.length) + 1}`}
+                              alt={`Frame ${frameNumber}`}
                               loading={i < 3 ? "eager" : "lazy"}
                               decoding="async"
                               draggable={false}
-                              onClick={() => togglePhotoColour(key)}
-                              className={`h-full w-full cursor-pointer object-cover transition-all duration-700 ease-out group-hover:scale-110 ${interactivePhotoClass(key)}`}
+                              onClick={() => handleReelFrameClick(i)}
+                              className="h-full w-full cursor-zoom-in object-cover grayscale transition-all duration-700 ease-out group-hover:scale-110 sm:group-hover:grayscale-0"
                             />
+
                             <span className="pointer-events-none absolute bottom-1 right-1 text-[7px] uppercase tracking-[0.15em] text-white/50 transition-opacity duration-500 group-hover:text-white/90">
-                              {String((i % filmStripImages.length) + 1).padStart(2, "0")}
+                              {String(frameNumber).padStart(2, "0")}
                             </span>
                           </div>
                         )
@@ -714,6 +781,7 @@ function About() {
               Photography · Films · Visual Stories
             </p>
           </div>
+
           <p className="max-w-[320px] text-[10px] leading-[1.8] text-[#e5d4cc]/40 md:text-right">
             From quiet portraits to energetic cinematic films, every project
             begins with a story.
@@ -833,30 +901,26 @@ function About() {
                         onMouseMove={handleMouseMove}
                         className="flex w-full cursor-grab items-center gap-4 overflow-x-auto px-1 py-6 active:cursor-grabbing sm:gap-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                       >
-                        {selectedWorkImages.map((image, i) => {
-                          const key = `filmstrip-${image._id || image.publicId || i}`
-
-                          return (
-                            <motion.div
-                              key={image._id || image.publicId || i}
-                              initial={{ opacity: 0, y: 24, scale: 0.9 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              transition={{ duration: 0.45, delay: Math.min(i * 0.06, 0.3), ease: "easeOut" }}
-                              className="group relative h-[220px] w-[170px] shrink-0 overflow-hidden border border-[#e5d4cc]/10 shadow-2xl shadow-black/60 transition-transform duration-500 hover:scale-105 sm:h-[280px] sm:w-[220px] lg:h-[340px] lg:w-[270px]"
-                            >
-                              <img
-                                src={optimizeImage(image.url, 600)}
-                                alt={`Selected work ${i + 1}`}
-                                loading="lazy"
-                                decoding="async"
-                                draggable={false}
-                                onClick={() => togglePhotoColour(key)}
-                                className={`h-full w-full cursor-pointer object-cover transition-all duration-700 ease-out ${interactivePhotoClass(key)}`}
-                              />
-                              <div className="pointer-events-none absolute inset-0 bg-black/15 transition-opacity duration-700 group-hover:opacity-0" />
-                            </motion.div>
-                          )
-                        })}
+                        {selectedWorkImages.map((image, i) => (
+                          <motion.div
+                            key={image._id || image.publicId || i}
+                            initial={{ opacity: 0, y: 24, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ duration: 0.45, delay: Math.min(i * 0.06, 0.3), ease: "easeOut" }}
+                            className="group relative h-[220px] w-[170px] shrink-0 overflow-hidden border border-[#e5d4cc]/10 shadow-2xl shadow-black/60 transition-transform duration-500 hover:scale-105 sm:h-[280px] sm:w-[220px] lg:h-[340px] lg:w-[270px]"
+                          >
+                            <img
+                              src={optimizeImage(image.url, 600)}
+                              alt={`Selected work ${i + 1}`}
+                              loading="lazy"
+                              decoding="async"
+                              draggable={false}
+                              onClick={() => handleGalleryPhotoClick(i)}
+                              className="h-full w-full cursor-zoom-in object-cover grayscale transition-all duration-700 ease-out sm:group-hover:grayscale-0"
+                            />
+                            <div className="pointer-events-none absolute inset-0 bg-black/15 transition-opacity duration-700 group-hover:opacity-0" />
+                          </motion.div>
+                        ))}
                       </div>
 
                       <button
@@ -895,6 +959,78 @@ function About() {
           <span>01 — About</span>
         </div>
       </div>
+
+      {/* Photo popup (portal keeps it clear of transformed/overflow parents) */}
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {viewer && (
+              <motion.div
+                key="photo-viewer"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Photo viewer"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                onClick={closeViewer}
+                className="fixed inset-0 z-[1000] flex items-center justify-center overflow-hidden bg-black/80 p-4 pt-16 sm:p-8 sm:pt-16"
+              >
+                <button
+                  type="button"
+                  onClick={closeViewer}
+                  aria-label="Close photo"
+                  style={{
+                    top: "max(0.75rem, env(safe-area-inset-top))",
+                    right: "max(0.75rem, env(safe-area-inset-right))",
+                  }}
+                  className="absolute z-10 flex h-11 w-11 items-center justify-center rounded-full border border-[#e5d4cc]/30 bg-[#050505]/70 text-[26px] leading-none text-[#e5d4cc] transition-colors duration-300 hover:border-[#e5d4cc]/70 active:scale-95"
+                >
+                  ×
+                </button>
+
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex max-w-full flex-col items-center gap-4"
+                >
+                  <img
+                    src={optimizeImage(viewer.items[viewer.index]?.url, 1000)}
+                    alt={`Photo ${viewer.index + 1}`}
+                    decoding="async"
+                    draggable={false}
+                    className="max-h-[65vh] max-w-full object-contain sm:max-w-[640px]"
+                  />
+
+                  {viewer.items.length > 1 && (
+                    <div className="flex items-center gap-5">
+                      <button
+                        type="button"
+                        onClick={() => stepViewer(-1)}
+                        aria-label="Previous photo"
+                        className="flex h-11 w-11 items-center justify-center rounded-full border border-[#e5d4cc]/30 text-[20px] leading-none text-[#e5d4cc] transition-colors duration-300 hover:border-[#e5d4cc]/70 active:scale-95"
+                      >
+                        ‹
+                      </button>
+                      <span className="min-w-[48px] text-center text-[10px] tracking-[0.2em] text-[#e5d4cc]/50">
+                        {viewer.index + 1} / {viewer.items.length}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => stepViewer(1)}
+                        aria-label="Next photo"
+                        className="flex h-11 w-11 items-center justify-center rounded-full border border-[#e5d4cc]/30 text-[20px] leading-none text-[#e5d4cc] transition-colors duration-300 hover:border-[#e5d4cc]/70 active:scale-95"
+                      >
+                        ›
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
     </section>
   )
 }
