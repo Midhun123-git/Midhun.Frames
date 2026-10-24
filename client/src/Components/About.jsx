@@ -1,37 +1,56 @@
-﻿import { useRef, useState, useEffect } from "react"
+﻿
+import { useRef, useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import api from "../api/api.js"
 
 const fStops = [1.4, 2, 2.8, 4, 5.6, 8, 11, 16]
+const BASE_SPEED = 22
+const SPEEDS = [0.5, 1, 2]
+const RESUME_DELAY = 1800
 
 const fadeUp = {
   hidden: { opacity: 0, y: 50 },
   show: { opacity: 1, y: 0 },
 }
 
-// reel auto scroll
-const BASE_SPEED = 22 // px per second (slow)
-const SPEEDS = [0.5, 1, 2]
-const RESUME_DELAY = 1800 // ms after user touch/wheel/drag
+// Optimize Cloudinary images without changing the originals.
+const optimizeImage = (url, width = 700) => {
+  if (!url) return ""
+
+  if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) {
+    return url
+  }
+
+  const parts = url.split("/upload/")
+  const existingPath = parts[1] || ""
+
+  if (/^(?:[^/]*,)*(?:f_auto|q_auto(?::[^/,]+)?|w_\d+)(?:,|\/)/.test(existingPath)) {
+    return url
+  }
+
+  return `${parts[0]}/upload/f_auto,q_auto:good,w_${width},c_limit/${existingPath}`
+}
 
 function About() {
   const [about, setAbout] = useState(null)
   const [loading, setLoading] = useState(true)
   const [galleryOpen, setGalleryOpen] = useState(false)
   const [galleryHover, setGalleryHover] = useState(false)
-
-  const filmstripRef = useRef(null)
-  const dragState = useRef({ down: false, startX: 0, startScroll: 0 })
-
   const [portraitHover, setPortraitHover] = useState(false)
   const [reelTilt, setReelTilt] = useState({ x: 0, y: 0 })
-  const reelRef = useRef(null)
   const [dialHover, setDialHover] = useState(false)
-
-  // reel controls
-  const framesScrollRef = useRef(null)
   const [reelPaused, setReelPaused] = useState(false)
   const [speedIndex, setSpeedIndex] = useState(1)
+  const [visibleFrames, setVisibleFrames] = useState({})
+
+  // Tracks which photos the user has tapped to reveal in colour.
+  const [colourImages, setColourImages] = useState({})
+
+  const filmstripRef = useRef(null)
+  const reelRef = useRef(null)
+  const framesScrollRef = useRef(null)
+
+  const dragState = useRef({ down: false, startX: 0, startScroll: 0 })
 
   const framesState = useRef({
     dragging: false,
@@ -45,36 +64,63 @@ function About() {
     pauseUntil: 0,
   })
 
+  const togglePhotoColour = (key) => {
+    setColourImages((previous) => ({
+      ...previous,
+      [key]: !previous[key],
+    }))
+  }
+
+  // Default black-and-white; tapping toggles colour on touch devices.
+  // Desktop hover reveals colour.
+  const interactivePhotoClass = (key) =>
+    `${colourImages[key] ? "grayscale-0" : "grayscale"} sm:group-hover:grayscale-0`
+
+  const photoColourClass =
+    "grayscale-0 sm:grayscale sm:group-hover:grayscale-0"
+
   useEffect(() => {
+    let cancelled = false
+
     const fetchAbout = async () => {
       try {
         const response = await api.get("/about/public")
-        if (response.data?.success) {
+
+        if (!cancelled && response.data?.success) {
           setAbout(response.data.about)
         }
       } catch (error) {
         console.error("Failed to load About content", error)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
+
     fetchAbout()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const mainImage = about?.mainImage?.url || ""
   const filmStripImages = about?.filmStripImages || []
   const selectedWorkImages = about?.selectedWorkImages || []
 
-  // make one set long enough so wrap always works (min 4 frames)
   const reps = filmStripImages.length
     ? Math.ceil(4 / filmStripImages.length)
     : 0
-  const baseSet = Array.from({ length: reps }).flatMap(() => filmStripImages)
+
+  const baseSet = Array.from({ length: reps }).flatMap(
+    () => filmStripImages
+  )
+
   const loopedImages = [...baseSet, ...baseSet, ...baseSet]
 
   const wrapFramesScroll = () => {
     const el = framesScrollRef.current
     const s = framesState.current
+
     if (!el || !s.setHeight) return
 
     if (el.scrollTop >= s.setHeight * 2) {
@@ -88,8 +134,69 @@ function About() {
     framesState.current.pauseUntil = performance.now() + RESUME_DELAY
   }
 
-  // infinite auto scroll. Own float position, because
-  // el.scrollTop += 0.3 gets rounded away in many browsers.
+  // Track visible reel frames on mobile.
+  useEffect(() => {
+    const root = framesScrollRef.current
+    if (!root || filmStripImages.length === 0) return
+
+    let observer = null
+    const mediaQuery = window.matchMedia("(max-width: 639px)")
+
+    const updateFrameVisibility = () => {
+      observer?.disconnect()
+      observer = null
+
+      if (!mediaQuery.matches) {
+        setVisibleFrames({})
+        return
+      }
+
+      observer = new IntersectionObserver(
+        (entries) => {
+          setVisibleFrames((previous) => {
+            const next = { ...previous }
+
+            entries.forEach((entry) => {
+              const index = Number(
+                entry.target.getAttribute("data-frame-index")
+              )
+
+              if (Number.isFinite(index)) {
+                next[index] = entry.isIntersecting
+              }
+            })
+
+            return next
+          })
+        },
+        { root, threshold: 0.35 }
+      )
+
+      root.querySelectorAll("[data-frame]").forEach((frame) => {
+        observer.observe(frame)
+      })
+    }
+
+    updateFrameVisibility()
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", updateFrameVisibility)
+    } else {
+      mediaQuery.addListener(updateFrameVisibility)
+    }
+
+    return () => {
+      observer?.disconnect()
+
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener("change", updateFrameVisibility)
+      } else {
+        mediaQuery.removeListener(updateFrameVisibility)
+      }
+    }
+  }, [filmStripImages.length, loopedImages.length])
+
+  // Infinite reel scrolling.
   useEffect(() => {
     const el = framesScrollRef.current
     if (!el || filmStripImages.length === 0) return
@@ -122,7 +229,9 @@ function About() {
 
         if (active) {
           s.pos += BASE_SPEED * s.speed * dt
+
           if (s.pos >= setHeight * 2) s.pos -= setHeight
+
           el.scrollTop = s.pos
         } else {
           wrapFramesScroll()
@@ -134,10 +243,10 @@ function About() {
     }
 
     rafId = requestAnimationFrame(tick)
+
     return () => cancelAnimationFrame(rafId)
   }, [filmStripImages.length])
 
-  // wheel on reel: native listener so page does not scroll too
   useEffect(() => {
     const el = framesScrollRef.current
     if (!el) return
@@ -155,17 +264,20 @@ function About() {
 
   const handleReelMove = (e) => {
     if (!reelRef.current || e.pointerType === "touch") return
+
     const rect = reelRef.current.getBoundingClientRect()
     const px = (e.clientX - rect.left) / rect.width - 0.5
     const py = (e.clientY - rect.top) / rect.height - 0.5
+
     setReelTilt({ x: py * -6, y: px * 8 })
   }
 
   const resetReelTilt = () => setReelTilt({ x: 0, y: 0 })
 
-  // reel hover / drag (mouse). Touch uses native scroll.
   const handleFramesEnter = (e) => {
-    if (e.pointerType === "mouse") framesState.current.hovering = true
+    if (e.pointerType === "mouse") {
+      framesState.current.hovering = true
+    }
   }
 
   const handleFramesLeave = () => {
@@ -176,17 +288,22 @@ function About() {
 
   const handleFramesPointerDown = (e) => {
     if (e.pointerType !== "mouse") return
+
     const s = framesState.current
     s.dragging = true
     s.startY = e.clientY
     s.startScroll = framesScrollRef.current?.scrollTop || 0
+
     e.currentTarget.setPointerCapture?.(e.pointerId)
   }
 
   const handleFramesPointerMove = (e) => {
     const s = framesState.current
     if (!s.dragging || !framesScrollRef.current) return
-    framesScrollRef.current.scrollTop = s.startScroll - (e.clientY - s.startY)
+
+    framesScrollRef.current.scrollTop =
+      s.startScroll - (e.clientY - s.startY)
+
     wrapFramesScroll()
   }
 
@@ -200,10 +317,13 @@ function About() {
   const stepReel = (dir) => {
     const el = framesScrollRef.current
     if (!el) return
+
     const frame = el.querySelector("[data-frame]")
     const step = (frame?.offsetHeight || 120) + 3
 
-    framesState.current.pauseUntil = performance.now() + RESUME_DELAY + 800
+    framesState.current.pauseUntil =
+      performance.now() + RESUME_DELAY + 800
+
     el.scrollBy({ top: dir * step, behavior: "smooth" })
   }
 
@@ -219,19 +339,18 @@ function About() {
     setSpeedIndex(next)
   }
 
-  // selected work filmstrip (horizontal)
   const scrollFilmstrip = (dir) => {
-    if (filmstripRef.current) {
-      filmstripRef.current.scrollBy({
-        left: dir * 300,
-        behavior: "smooth",
-      })
-    }
+    filmstripRef.current?.scrollBy({
+      left: dir * 300,
+      behavior: "smooth",
+    })
   }
 
   const handleWheel = (e) => {
-    // only convert vertical wheel when there is no horizontal intent
-    if (filmstripRef.current && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+    if (
+      filmstripRef.current &&
+      Math.abs(e.deltaY) > Math.abs(e.deltaX)
+    ) {
       filmstripRef.current.scrollLeft += e.deltaY
     }
   }
@@ -250,8 +369,10 @@ function About() {
 
   const handleMouseMove = (e) => {
     if (!dragState.current.down || !filmstripRef.current) return
+
     const dx = e.pageX - dragState.current.startX
-    filmstripRef.current.scrollLeft = dragState.current.startScroll - dx
+    filmstripRef.current.scrollLeft =
+      dragState.current.startScroll - dx
   }
 
   const ctrlBtn =
@@ -272,9 +393,7 @@ function About() {
     )
   }
 
-  if (!about) {
-    return null
-  }
+  if (!about) return null
 
   return (
     <section
@@ -282,7 +401,7 @@ function About() {
       className="relative overflow-hidden bg-[#050505] px-[6%] py-[10px] text-[#e5d4cc] sm:px-[7%] lg:py-[30px]"
     >
       <div className="relative mx-auto max-w-[1350px]">
-        {/* header */}
+        {/* Header */}
         <motion.div
           variants={fadeUp}
           initial="hidden"
@@ -295,7 +414,6 @@ function About() {
             <p className="text-[9px] uppercase tracking-[0.3em] text-[#e5d4cc]/40">
               01 / About
             </p>
-
             <h3 className="mt-4 font-serif text-[30px] font-normal leading-[1] text-[#e3cec4] md:text-[42px]">
               {about.heading}
             </h3>
@@ -306,9 +424,9 @@ function About() {
           </div>
         </motion.div>
 
-        {/* hero area: stacked on mobile/tablet, absolute collage on lg+ */}
+        {/* Hero area */}
         <div className="relative flex flex-col gap-12 lg:block lg:min-h-[760px]">
-          {/* portrait */}
+          {/* Portrait */}
           <div className="relative z-[50] mx-auto w-[220px] sm:mx-0 sm:w-[240px] lg:absolute lg:left-0 lg:top-0 lg:w-[250px]">
             {mainImage && (
               <motion.div
@@ -319,21 +437,19 @@ function About() {
                 transition={{ duration: 1, ease: "easeOut" }}
                 onMouseEnter={() => setPortraitHover(true)}
                 onMouseLeave={() => setPortraitHover(false)}
-                onClick={() => setPortraitHover((v) => !v)}
-                className="relative aspect-square w-full overflow-hidden"
+                className="group relative aspect-square w-full overflow-hidden"
               >
                 <img
-                  src={mainImage}
+                  src={optimizeImage(mainImage, 600)}
                   alt="Midhun Frames portrait"
                   loading="lazy"
+                  decoding="async"
                   draggable={false}
+                  className={`block h-full w-full cursor-pointer object-cover transition-all duration-700 ease-out ${interactivePhotoClass("portrait")}`}
+                  onClick={() => togglePhotoColour("portrait")}
                   style={{
-                    filter: portraitHover ? "grayscale(0%)" : "grayscale(100%)",
                     transform: portraitHover ? "scale(1.05)" : "scale(1)",
-                    transition:
-                      "filter 900ms ease-out, transform 900ms ease-out",
                   }}
-                  className="block h-full w-full object-cover"
                 />
               </motion.div>
             )}
@@ -349,20 +465,18 @@ function About() {
               <p className="text-[9px] uppercase tracking-[0.25em] text-[#e5d4cc]/40">
                 Midhun Frames
               </p>
-
               <p className="mt-3 font-serif text-[15px] italic leading-snug text-[#e3cec4]/80">
                 Chasing quiet light
                 <br />
                 and honest frames.
               </p>
-
               <p className="mt-4 text-[9px] uppercase tracking-[0.2em] text-[#e5d4cc]/30">
                 {about.location}
               </p>
             </motion.div>
           </div>
 
-          {/* approach + dial (lg:contents so children position vs hero area) */}
+          {/* Approach + dial */}
           <div className="flex flex-col items-center gap-8 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left lg:contents">
             <motion.div
               variants={fadeUp}
@@ -375,7 +489,6 @@ function About() {
               <p className="text-[10px] uppercase tracking-[0.18em] text-[#e5d4cc]/35">
                 {about.approachTitle}
               </p>
-
               <p className="mt-4 text-[12px] leading-[1.8] text-[#e5d4cc]/55 lg:text-[11px]">
                 {about.approachText}
               </p>
@@ -399,7 +512,6 @@ function About() {
                 >
                   {fStops.map((stop, i) => {
                     const angle = (360 / fStops.length) * i
-
                     return (
                       <span
                         key={stop}
@@ -449,7 +561,6 @@ function About() {
                   <p className="font-serif text-[13px] text-[#e3cec4]">
                     {dialHover ? "1/125" : "f/2.8"}
                   </p>
-
                   <p className="mt-1 text-[7px] uppercase tracking-[0.2em] text-[#e5d4cc]/35">
                     {dialHover ? "Shutter" : "ISO 400"}
                   </p>
@@ -460,7 +571,7 @@ function About() {
 
           <div className="absolute left-[42%] top-[85px] hidden h-[170px] w-px bg-[#e5d4cc]/20 lg:block" />
 
-          {/* film reel */}
+          {/* Film reel */}
           {filmStripImages.length > 0 && (
             <motion.div
               ref={reelRef}
@@ -478,11 +589,7 @@ function About() {
 
               <motion.div
                 animate={{ rotate: [-1.2, 1.2, -1.2] }}
-                transition={{
-                  duration: 7,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
+                transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
                 style={{
                   transform: `rotateX(${reelTilt.x}deg) rotateY(${reelTilt.y}deg)`,
                   transformStyle: "preserve-3d",
@@ -514,27 +621,31 @@ function About() {
                     className="h-[300px] flex-1 cursor-grab select-none overflow-y-scroll active:cursor-grabbing sm:h-[340px] lg:h-[380px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                   >
                     <div className="flex flex-col gap-[3px]">
-                      {loopedImages.map((image, i) => (
-                        <div
-                          key={`${image._id || image.publicId || i}-${i}`}
-                          data-frame
-                          className="group relative aspect-[4/3] shrink-0 overflow-hidden border border-[#e5d4cc]/10"
-                        >
-                          <img
-                            src={image.url}
-                            alt={`Frame ${(i % filmStripImages.length) + 1}`}
-                            loading="lazy"
-                            draggable={false}
-                            className="h-full w-full object-cover grayscale transition-all duration-700 ease-out group-hover:scale-110 group-hover:grayscale-0"
-                          />
+                      {loopedImages.map((image, i) => {
+                        const key = `reel-${image._id || image.publicId || i}`
 
-                          <span className="pointer-events-none absolute bottom-1 right-1 text-[7px] uppercase tracking-[0.15em] text-white/50 transition-opacity duration-500 group-hover:text-white/90">
-                            {String(
-                              (i % filmStripImages.length) + 1
-                            ).padStart(2, "0")}
-                          </span>
-                        </div>
-                      ))}
+                        return (
+                          <div
+                            key={`${image._id || image.publicId || i}-${i}`}
+                            data-frame
+                            data-frame-index={i}
+                            className="group relative aspect-[4/3] shrink-0 overflow-hidden border border-[#e5d4cc]/10"
+                          >
+                            <img
+                              src={optimizeImage(image.url, 350)}
+                              alt={`Frame ${(i % filmStripImages.length) + 1}`}
+                              loading={i < 3 ? "eager" : "lazy"}
+                              decoding="async"
+                              draggable={false}
+                              onClick={() => togglePhotoColour(key)}
+                              className={`h-full w-full cursor-pointer object-cover transition-all duration-700 ease-out group-hover:scale-110 ${interactivePhotoClass(key)}`}
+                            />
+                            <span className="pointer-events-none absolute bottom-1 right-1 text-[7px] uppercase tracking-[0.15em] text-white/50 transition-opacity duration-500 group-hover:text-white/90">
+                              {String((i % filmStripImages.length) + 1).padStart(2, "0")}
+                            </span>
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
 
@@ -548,41 +659,17 @@ function About() {
                   </div>
                 </div>
 
-                {/* user controls */}
                 <div className="mt-3 flex items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => stepReel(-1)}
-                    aria-label="Previous frame"
-                    className={ctrlBtn}
-                  >
+                  <button type="button" onClick={() => stepReel(-1)} aria-label="Previous frame" className={ctrlBtn}>
                     ↑
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={toggleReelPause}
-                    aria-label={reelPaused ? "Play reel" : "Pause reel"}
-                    className={ctrlBtn}
-                  >
+                  <button type="button" onClick={toggleReelPause} aria-label={reelPaused ? "Play reel" : "Pause reel"} className={ctrlBtn}>
                     {reelPaused ? "▶" : "Ⅱ"}
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => stepReel(1)}
-                    aria-label="Next frame"
-                    className={ctrlBtn}
-                  >
+                  <button type="button" onClick={() => stepReel(1)} aria-label="Next frame" className={ctrlBtn}>
                     ↓
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={cycleSpeed}
-                    aria-label="Change speed"
-                    className={ctrlBtn}
-                  >
+                  <button type="button" onClick={cycleSpeed} aria-label="Change speed" className={ctrlBtn}>
                     {SPEEDS[speedIndex]}x
                   </button>
                 </div>
@@ -610,7 +697,7 @@ function About() {
           </motion.h2>
         </div>
 
-        {/* what I create */}
+        {/* What I create */}
         <motion.div
           variants={fadeUp}
           initial="hidden"
@@ -623,19 +710,17 @@ function About() {
             <p className="text-[9px] uppercase tracking-[0.25em] text-[#e5d4cc]/35">
               What I create
             </p>
-
             <p className="mt-3 text-[11px] text-[#e5d4cc]/60">
               Photography · Films · Visual Stories
             </p>
           </div>
-
           <p className="max-w-[320px] text-[10px] leading-[1.8] text-[#e5d4cc]/40 md:text-right">
             From quiet portraits to energetic cinematic films, every project
             begins with a story.
           </p>
         </motion.div>
 
-        {/* selected work */}
+        {/* Selected work */}
         {selectedWorkImages.length > 0 && (
           <motion.div
             variants={fadeUp}
@@ -650,7 +735,6 @@ function About() {
                 <p className="text-[9px] uppercase tracking-[0.3em] text-[#e5d4cc]/35">
                   Selected work
                 </p>
-
                 <h3 className="mt-4 font-serif text-[clamp(38px,11vw,55px)] font-normal leading-none tracking-[-2px] text-[#e3cec4] md:text-[75px]">
                   Stories
                   <br />
@@ -663,7 +747,6 @@ function About() {
                 className="group flex items-center gap-5 text-[9px] uppercase tracking-[0.25em] text-[#e5d4cc]/60 transition-all duration-500 hover:text-[#e5d4cc]"
               >
                 <span>View all work</span>
-
                 <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e5d4cc]/20 transition-all duration-500 group-hover:translate-x-2 group-hover:border-[#e5d4cc]/60">
                   →
                 </span>
@@ -687,6 +770,7 @@ function About() {
                     {selectedWorkImages.map((image, i) => {
                       const mid = (selectedWorkImages.length - 1) / 2
                       const offset = i - mid
+                      const isTopImage = i === selectedWorkImages.length - 1
 
                       return (
                         <motion.div
@@ -697,29 +781,22 @@ function About() {
                               : {
                                   x: 0,
                                   rotate: 0,
-                                  scale:
-                                    i === selectedWorkImages.length - 1
-                                      ? 1
-                                      : 0.94,
+                                  scale: isTopImage ? 1 : 0.94,
                                 }
                           }
-                          transition={{
-                            type: "spring",
-                            stiffness: 160,
-                            damping: 20,
-                          }}
+                          transition={{ type: "spring", stiffness: 160, damping: 20 }}
                           style={{ position: "absolute", zIndex: i }}
-                          className="group h-[220px] w-[170px] overflow-hidden border border-[#e5d4cc]/10 shadow-2xl shadow-black/60 sm:h-[280px] sm:w-[220px] lg:h-[340px] lg:w-[270px]"
+                          className="group h-[220px] w-[170px] overflow-hidden border border-[#e5d4cc]/10 shadow-2xl shadow-black/60"
                         >
                           <img
-                            src={image.url}
+                            src={optimizeImage(image.url, 600)}
                             alt={`Selected work ${i + 1}`}
-                            loading="lazy"
+                            loading={isTopImage ? "eager" : "lazy"}
+                            decoding="async"
                             draggable={false}
-                            className="h-full w-full object-cover grayscale transition-all duration-700 ease-out group-hover:grayscale-0"
+                            className={`h-full w-full object-cover transition-all duration-700 ease-out ${photoColourClass}`}
                           />
-
-                          <div className="pointer-events-none absolute inset-0 bg-black/15 transition-opacity duration-700 group-hover:opacity-0" />
+                          <div className="pointer-events-none absolute inset-0 bg-black/15 transition-opacity duration-700 group-hover:opacity-0 sm:group-hover:opacity-0" />
                         </motion.div>
                       )
                     })}
@@ -735,11 +812,8 @@ function About() {
                     <div className="mb-4 flex items-center justify-between">
                       <p className="text-[9px] uppercase tracking-[0.25em] text-[#e5d4cc]/35">
                         <span className="sm:hidden">Swipe to see all photos</span>
-                        <span className="hidden sm:inline">
-                          Scroll to see all photos
-                        </span>
+                        <span className="hidden sm:inline">Scroll to see all photos</span>
                       </p>
-
                       <button
                         type="button"
                         onClick={() => setGalleryOpen(false)}
@@ -759,29 +833,30 @@ function About() {
                         onMouseMove={handleMouseMove}
                         className="flex w-full cursor-grab items-center gap-4 overflow-x-auto px-1 py-6 active:cursor-grabbing sm:gap-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                       >
-                        {selectedWorkImages.map((image, i) => (
-                          <motion.div
-                            key={image._id || image.publicId || i}
-                            initial={{ opacity: 0, y: 24, scale: 0.9 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            transition={{
-                              duration: 0.45,
-                              delay: i * 0.06,
-                              ease: "easeOut",
-                            }}
-                            className="group relative h-[220px] w-[170px] shrink-0 overflow-hidden border border-[#e5d4cc]/10 shadow-2xl shadow-black/60 transition-transform duration-500 hover:scale-105 sm:h-[280px] sm:w-[220px] lg:h-[340px] lg:w-[270px]"
-                          >
-                            <img
-                              src={image.url}
-                              alt={`Selected work ${i + 1}`}
-                              loading="lazy"
-                              draggable={false}
-                              className="h-full w-full object-cover grayscale transition-all duration-700 ease-out group-hover:grayscale-0"
-                            />
+                        {selectedWorkImages.map((image, i) => {
+                          const key = `filmstrip-${image._id || image.publicId || i}`
 
-                            <div className="pointer-events-none absolute inset-0 bg-black/15 transition-opacity duration-700 group-hover:opacity-0" />
-                          </motion.div>
-                        ))}
+                          return (
+                            <motion.div
+                              key={image._id || image.publicId || i}
+                              initial={{ opacity: 0, y: 24, scale: 0.9 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              transition={{ duration: 0.45, delay: Math.min(i * 0.06, 0.3), ease: "easeOut" }}
+                              className="group relative h-[220px] w-[170px] shrink-0 overflow-hidden border border-[#e5d4cc]/10 shadow-2xl shadow-black/60 transition-transform duration-500 hover:scale-105 sm:h-[280px] sm:w-[220px] lg:h-[340px] lg:w-[270px]"
+                            >
+                              <img
+                                src={optimizeImage(image.url, 600)}
+                                alt={`Selected work ${i + 1}`}
+                                loading="lazy"
+                                decoding="async"
+                                draggable={false}
+                                onClick={() => togglePhotoColour(key)}
+                                className={`h-full w-full cursor-pointer object-cover transition-all duration-700 ease-out ${interactivePhotoClass(key)}`}
+                              />
+                              <div className="pointer-events-none absolute inset-0 bg-black/15 transition-opacity duration-700 group-hover:opacity-0" />
+                            </motion.div>
+                          )
+                        })}
                       </div>
 
                       <button
@@ -792,7 +867,6 @@ function About() {
                       >
                         ←
                       </button>
-
                       <button
                         type="button"
                         onClick={() => scrollFilmstrip(1)}
@@ -809,9 +883,7 @@ function About() {
               {!galleryOpen && (
                 <p className="mt-4 text-center text-[9px] uppercase tracking-[0.2em] text-[#e5d4cc]/35">
                   <span className="sm:hidden">Tap to view all</span>
-                  <span className="hidden sm:inline">
-                    Hover to preview · Click to view all
-                  </span>
+                  <span className="hidden sm:inline">Hover to preview · Click to view all</span>
                 </p>
               )}
             </div>

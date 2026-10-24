@@ -35,19 +35,22 @@ const SHUTTER_CLOSED_AT = 0.17;
 const EASE = [0.22, 1, 0.36, 1];
 
 /* ------------------------------------------------------------------ */
-/* Cloudinary image optimization                                       */
+/* Cloudinary image optimization                                      */
 /* ------------------------------------------------------------------ */
 
 const optimizeCloudinaryUrl = (url, width) => {
   if (!url || !url.includes("res.cloudinary.com")) return url;
 
-  // Avoid adding transformations twice if the URL already has them.
   const uploadIndex = url.indexOf("/upload/");
   if (uploadIndex === -1) return url;
 
   const afterUpload = url.slice(uploadIndex + "/upload/".length);
 
-  if (/^(?:f_auto|q_auto|w_\d+|c_limit|c_fill|c_scale)\b/.test(afterUpload)) {
+  if (
+    /^(?:f_auto|q_auto|w_\d+|c_limit|c_fill|c_scale)\b/.test(
+      afterUpload
+    )
+  ) {
     return url;
   }
 
@@ -58,7 +61,9 @@ const optimizeCloudinaryUrl = (url, width) => {
 };
 
 const getHeroImageSrcSet = (url) => {
-  if (!url || !url.includes("res.cloudinary.com")) return undefined;
+  if (!url || !url.includes("res.cloudinary.com")) {
+    return undefined;
+  }
 
   return [
     `${optimizeCloudinaryUrl(url, 640)} 640w`,
@@ -67,64 +72,6 @@ const getHeroImageSrcSet = (url) => {
     `${optimizeCloudinaryUrl(url, 1920)} 1920w`,
   ].join(", ");
 };
-
-/* ------------------------------------------------------------------ */
-/* Built-in shutter sound                                              */
-/* ------------------------------------------------------------------ */
-
-function playSynthShutter(ctx) {
-  const now = ctx.currentTime;
-
-  const click = (time, frequency, level) => {
-    const length = Math.floor(ctx.sampleRate * 0.05);
-    const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-
-    for (let i = 0; i < length; i += 1) {
-      data[i] =
-        (Math.random() * 2 - 1) *
-        Math.exp(-i / (length * 0.16));
-    }
-
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-
-    const filter = ctx.createBiquadFilter();
-    filter.type = "bandpass";
-    filter.frequency.value = frequency;
-    filter.Q.value = 1.1;
-
-    const gain = ctx.createGain();
-    gain.gain.value = level;
-
-    source.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-    source.start(time);
-  };
-
-  const thump = (time) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(170, time);
-    osc.frequency.exponentialRampToValueAtTime(55, time + 0.07);
-
-    gain.gain.setValueAtTime(0.35, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.09);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(time);
-    osc.stop(time + 0.1);
-  };
-
-  click(now, 3400, 1.1);
-  thump(now);
-  click(now + 0.09, 2300, 0.8);
-  thump(now + 0.09);
-}
 
 /* ------------------------------------------------------------------ */
 /* Shutter iris                                                        */
@@ -140,17 +87,20 @@ function ShutterIris({ trigger }) {
   useEffect(() => {
     if (!trigger) return undefined;
 
-    const open = Math.hypot(
-      window.innerWidth,
-      window.innerHeight
-    ) * 1.15;
+    const open =
+      Math.hypot(window.innerWidth, window.innerHeight) * 1.15;
 
     cx.set(trigger.x);
     cy.set(trigger.y);
 
     const controls = animate(radius, [open, 0, 0, open], {
       duration: SHUTTER_TOTAL,
-      times: [0, SHUTTER_CLOSED_AT / SHUTTER_TOTAL, 0.42, 1],
+      times: [
+        0,
+        SHUTTER_CLOSED_AT / SHUTTER_TOTAL,
+        0.42,
+        1,
+      ],
       ease: ["easeIn", "linear", "easeOut"],
     });
 
@@ -160,7 +110,10 @@ function ShutterIris({ trigger }) {
   const points = useTransform([radius, cx, cy], ([r, x, y]) =>
     Array.from({ length: 6 }, (_, k) => {
       const angle = (Math.PI / 3) * k + Math.PI / 6;
-      return `${x + r * Math.cos(angle)},${y + r * Math.sin(angle)}`;
+
+      return `${x + r * Math.cos(angle)},${
+        y + r * Math.sin(angle)
+      }`;
     }).join(" ")
   );
 
@@ -255,8 +208,14 @@ function Polaroid({ shot, reduced, constraintsRef, onExpire }) {
         duration: reduced ? 0.15 : 0.7,
         ease: EASE,
       }}
-      whileHover={reduced ? undefined : { scale: 1.035, zIndex: 50 }}
-      whileDrag={{ scale: 1.06, zIndex: 100, cursor: "grabbing" }}
+      whileHover={
+        reduced ? undefined : { scale: 1.035, zIndex: 50 }
+      }
+      whileDrag={{
+        scale: 1.06,
+        zIndex: 100,
+        cursor: "grabbing",
+      }}
       className="pointer-events-auto absolute z-20 cursor-grab select-none outline-none"
       style={{
         left: `${shot.x}%`,
@@ -289,6 +248,7 @@ function Polaroid({ shot, reduced, constraintsRef, onExpire }) {
             <p className="font-serif text-[10px] tracking-[0.12em] text-[#24231f] sm:text-xs">
               MIDHUN FRAMES
             </p>
+
             <p className="mt-1 text-[7px] uppercase tracking-[0.17em] text-black/45 sm:text-[8px]">
               A moment preserved
             </p>
@@ -327,8 +287,6 @@ export default function Hero() {
   const autoDoneRef = useRef(false);
   const shutterAudioRef = useRef(null);
   const soundRef = useRef(true);
-  const fileReadyRef = useRef(false);
-  const audioCtxRef = useRef(null);
   const timersRef = useRef([]);
 
   const cursorX = useMotionValue(0);
@@ -346,7 +304,8 @@ export default function Hero() {
 
   const heroImage = heroContent?.imageUrl || "";
 
-  // Fetch the admin-managed hero content.
+  /* Fetch admin-managed hero content */
+
   useEffect(() => {
     let active = true;
 
@@ -370,7 +329,8 @@ export default function Hero() {
     };
   }, []);
 
-  // If the image URL has already been cached, don't wait for another load event.
+  /* Handle cached images */
+
   useEffect(() => {
     const img = imgRef.current;
 
@@ -380,40 +340,48 @@ export default function Hero() {
     }
   }, [heroImage]);
 
+  /* Keep sound preference synchronized */
+
   useEffect(() => {
     soundRef.current = soundEnabled;
   }, [soundEnabled]);
 
-  // Camera shutter audio.
+  /* -------------------------------------------------------------- */
+  /* Original camera shutter audio                                  */
+  /* -------------------------------------------------------------- */
+
   useEffect(() => {
     const audio = new Audio("/sounds/camera-shutter.mp3");
 
-    audio.preload = "none";
+    audio.preload = "auto";
     audio.volume = 0.7;
-
-    const markReady = () => {
-      fileReadyRef.current = true;
-    };
-
-    const markFailed = () => {
-      fileReadyRef.current = false;
-    };
-
-    audio.addEventListener("canplaythrough", markReady);
-    audio.addEventListener("error", markFailed);
+    audio.setAttribute("playsinline", "");
 
     shutterAudioRef.current = audio;
 
+    // Begin loading the original sound file.
+    audio.load();
+
+    const handleAudioError = () => {
+      console.error(
+        "Camera shutter audio could not load. Check public/sounds/camera-shutter.mp3."
+      );
+    };
+
+    audio.addEventListener("error", handleAudioError);
+
     return () => {
-      audio.removeEventListener("canplaythrough", markReady);
-      audio.removeEventListener("error", markFailed);
+      audio.removeEventListener("error", handleAudioError);
       audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+
       shutterAudioRef.current = null;
 
-      audioCtxRef.current?.close?.();
-      audioCtxRef.current = null;
+      timersRef.current.forEach((id) =>
+        window.clearTimeout(id)
+      );
 
-      timersRef.current.forEach((id) => window.clearTimeout(id));
       timersRef.current = [];
     };
   }, []);
@@ -422,45 +390,25 @@ export default function Hero() {
     if (!soundRef.current) return;
 
     const audio = shutterAudioRef.current;
-
-    if (audio && fileReadyRef.current) {
-      try {
-        audio.currentTime = 0;
-
-        const playback = audio.play();
-
-        if (playback && typeof playback.catch === "function") {
-          playback.catch(() => {});
-        }
-      } catch {
-        // Continue to the synthesized sound.
-      }
-
-      return;
-    }
+    if (!audio) return;
 
     try {
-      const AudioContextClass =
-        window.AudioContext || window.webkitAudioContext;
+      // Restart the original audio for every camera click.
+      audio.currentTime = 0;
 
-      if (!AudioContextClass) return;
+      const playback = audio.play();
 
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new AudioContextClass();
+      if (playback && typeof playback.catch === "function") {
+        playback.catch((error) => {
+          console.error("Camera shutter playback failed:", error);
+        });
       }
-
-      const ctx = audioCtxRef.current;
-
-      if (ctx.state === "suspended") {
-        ctx.resume().then(() => playSynthShutter(ctx)).catch(() => {});
-        return;
-      }
-
-      playSynthShutter(ctx);
-    } catch {
-      // Camera sound is optional.
+    } catch (error) {
+      console.error("Camera shutter playback failed:", error);
     }
   }, []);
+
+  /* Camera flash */
 
   const triggerFlash = useCallback(() => {
     setFlash(true);
@@ -472,6 +420,8 @@ export default function Hero() {
 
     timersRef.current.push(id);
   }, [reduced]);
+
+  /* Capture a photograph */
 
   const capture = useCallback(
     (clientX, clientY) => {
@@ -532,7 +482,10 @@ export default function Hero() {
       const delay = reduced ? 0 : SHUTTER_CLOSED_AT * 1000;
 
       const id = window.setTimeout(() => {
-        setShots((current) => [...current, newShot].slice(-MAX_SHOTS));
+        setShots((current) =>
+          [...current, newShot].slice(-MAX_SHOTS)
+        );
+
         triggerFlash();
       }, delay);
 
@@ -550,10 +503,13 @@ export default function Hero() {
   );
 
   const expireShot = useCallback((id) => {
-    setShots((current) => current.filter((shot) => shot.id !== id));
+    setShots((current) =>
+      current.filter((shot) => shot.id !== id)
+    );
   }, []);
 
-  // Automatically take the first Polaroid after the hero image loads.
+  /* Automatically capture the first Polaroid */
+
   useEffect(() => {
     if (!loadedImage || !heroImage || autoDoneRef.current) {
       return undefined;
@@ -575,6 +531,8 @@ export default function Hero() {
     return () => window.clearTimeout(timeout);
   }, [loadedImage, heroImage, capture, reduced]);
 
+  /* Custom cursor */
+
   const handlePointerMove = useCallback(
     (event) => {
       if (event.pointerType === "touch") return;
@@ -584,6 +542,8 @@ export default function Hero() {
     },
     [cursorX, cursorY]
   );
+
+  /* Portfolio navigation */
 
   const scrollToPortfolio = useCallback(() => {
     document.getElementById("portfolio")?.scrollIntoView({
@@ -605,6 +565,7 @@ export default function Hero() {
         className="relative isolate flex min-h-[100svh] w-full cursor-crosshair flex-col justify-end overflow-hidden bg-[#090a0b] text-[#f3f0e8] selection:bg-white/20"
       >
         {/* Optimized full-bleed hero photograph */}
+
         {heroImage && (
           <img
             ref={imgRef}
@@ -633,6 +594,7 @@ export default function Hero() {
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-black/25" />
 
         {/* Film grain */}
+
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.1] mix-blend-soft-light"
           style={{
@@ -642,6 +604,7 @@ export default function Hero() {
         />
 
         {/* Viewfinder frame */}
+
         <div className="pointer-events-none absolute inset-x-4 bottom-4 top-[84px] sm:inset-x-8 sm:bottom-8 md:inset-x-10 md:bottom-10">
           <span className="absolute left-0 top-0 h-5 w-5 border-l border-t border-[#c9a875] sm:h-7 sm:w-7" />
           <span className="absolute right-0 top-0 h-5 w-5 border-r border-t border-[#c9a875] sm:h-7 sm:w-7" />
@@ -653,11 +616,14 @@ export default function Hero() {
         </div>
 
         {/* Top metadata */}
+
         <div className="pointer-events-none absolute left-7 right-7 top-[100px] z-10 flex items-start justify-between gap-4 sm:left-12 sm:right-12 sm:top-[108px] md:left-16 md:right-16">
           <div>
             <p className="text-[9px] uppercase tracking-[0.3em] text-white/80 sm:text-[10px]">
-              {heroContent?.eyebrow || "Photography · Films · Stories"}
+              {heroContent?.eyebrow ||
+                "Photography · Films · Stories"}
             </p>
+
             <div className="mt-3 h-px w-12 bg-[#c9a875]" />
           </div>
 
@@ -665,6 +631,7 @@ export default function Hero() {
             <p className="text-[8px] uppercase tracking-[0.25em] text-white/70 sm:text-[9px]">
               Independent visual artist
             </p>
+
             <p className="mt-2 font-serif text-xs tracking-[0.08em] text-white/90 sm:text-sm">
               Kerala, India
             </p>
@@ -672,6 +639,7 @@ export default function Hero() {
         </div>
 
         {/* Polaroid layer */}
+
         <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
           <AnimatePresence initial={false}>
             {shots.map((shot) => (
@@ -686,7 +654,8 @@ export default function Hero() {
           </AnimatePresence>
         </div>
 
-        {/* Main editorial text - shown immediately */}
+        {/* Main editorial text */}
+
         <div className="pointer-events-none relative z-10 w-full px-7 pb-28 pt-44 sm:px-12 sm:pb-28 md:px-16 md:pb-32">
           <motion.div
             initial={false}
@@ -695,7 +664,9 @@ export default function Hero() {
           >
             <p className="mb-5 flex items-center gap-3 text-[9px] uppercase tracking-[0.32em] text-white/80 sm:text-[10px]">
               <span className="h-px w-8 bg-[#c9a875]" />
-              {heroContent?.subheading || "Stories told through light"}
+
+              {heroContent?.subheading ||
+                "Stories told through light"}
             </p>
 
             <h1 className="max-w-4xl whitespace-pre-line font-serif text-[clamp(3.1rem,9vw,8rem)] font-normal leading-[0.92] tracking-[-0.05em] text-white">
@@ -717,6 +688,7 @@ export default function Hero() {
                 className="group inline-flex min-h-12 items-center gap-4 border border-white/60 bg-black/20 px-6 py-3.5 text-[10px] uppercase tracking-[0.2em] text-white backdrop-blur-sm transition duration-300 hover:border-white hover:bg-white hover:text-black"
               >
                 Explore the work
+
                 <ArrowUpRight
                   size={15}
                   strokeWidth={1.5}
@@ -726,11 +698,15 @@ export default function Hero() {
 
               <span className="flex items-center gap-2 text-[9px] uppercase tracking-[0.17em] text-white/70">
                 <Camera size={14} strokeWidth={1.4} />
+
                 {taken > 0 ? (
                   `${taken} frame${taken === 1 ? "" : "s"} captured`
                 ) : (
                   <>
-                    <span className="sm:hidden">Tap anywhere to shoot</span>
+                    <span className="sm:hidden">
+                      Tap anywhere to shoot
+                    </span>
+
                     <span className="hidden sm:inline">
                       Click anywhere to shoot
                     </span>
@@ -741,12 +717,14 @@ export default function Hero() {
           </motion.div>
         </div>
 
-        {/* Bottom details + sound toggle */}
+        {/* Bottom details and sound toggle */}
+
         <div className="pointer-events-none absolute bottom-7 left-7 right-7 z-30 flex items-end justify-between gap-4 sm:bottom-12 sm:left-12 sm:right-12 md:bottom-14 md:left-16 md:right-16">
           <div className="hidden sm:block">
             <p className="text-[8px] uppercase tracking-[0.25em] text-white/60 sm:text-[9px]">
               Available for selected projects
             </p>
+
             <p className="mt-2 font-serif text-sm tracking-wide text-white/85">
               Midhun Frames
             </p>
@@ -769,7 +747,9 @@ export default function Hero() {
             <button
               type="button"
               aria-label={
-                soundEnabled ? "Mute camera sound" : "Enable camera sound"
+                soundEnabled
+                  ? "Mute camera sound"
+                  : "Enable camera sound"
               }
               aria-pressed={soundEnabled}
               onClick={(event) => {
@@ -788,6 +768,7 @@ export default function Hero() {
         </div>
 
         {/* Custom cursor */}
+
         {!reduced && aiming && (
           <motion.div
             className="pointer-events-none fixed left-0 top-0 z-[80] hidden h-10 w-10 items-center justify-center rounded-full border border-white/55 text-white/80 mix-blend-difference md:flex"
@@ -803,9 +784,11 @@ export default function Hero() {
         )}
 
         {/* Shutter blades */}
+
         {!reduced && <ShutterIris trigger={shutter} />}
 
         {/* Camera flash */}
+
         <AnimatePresence>
           {flash && (
             <motion.div
