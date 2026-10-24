@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import {
@@ -13,6 +12,8 @@ import {
 import Header from "./Components/Header";
 import Hero from "./Components/Hero";
 import About from "./Components/About";
+import FloatingChat from "./Components/FloatingChat";
+
 import Portfolio from "./Pages/Portfolio";
 import Contact from "./Pages/Contact";
 import Footer from "./Pages/Footer";
@@ -80,14 +81,14 @@ function PublicWebsite() {
       </main>
 
       <AnimatePresence>
-        {authOpen && (
-          <Auth onClose={() => setAuthOpen(false)} />
-        )}
+        {authOpen && <Auth onClose={() => setAuthOpen(false)} />}
 
         {bookingsOpen && (
           <MyBookings onClose={() => setBookingsOpen(false)} />
         )}
       </AnimatePresence>
+
+      <FloatingChat />
     </>
   );
 }
@@ -108,6 +109,8 @@ function PortfolioPage() {
       <div className="min-h-screen bg-[#05070a] pt-20 text-white">
         <Portfolio />
       </div>
+
+      <FloatingChat />
     </>
   );
 }
@@ -128,14 +131,14 @@ function ProfilePage() {
       </main>
 
       <AnimatePresence>
-        {authOpen && (
-          <Auth onClose={() => setAuthOpen(false)} />
-        )}
+        {authOpen && <Auth onClose={() => setAuthOpen(false)} />}
 
         {bookingsOpen && (
           <MyBookings onClose={() => setBookingsOpen(false)} />
         )}
       </AnimatePresence>
+
+      <FloatingChat />
     </>
   );
 }

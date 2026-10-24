@@ -1,4 +1,5 @@
-﻿import React, {
+﻿
+import React, {
   useCallback,
   useEffect,
   useId,
@@ -26,17 +27,51 @@ import api from "../api/api.js";
 
 const MAX_SHOTS = 5;
 const AUTO_SHOT_DELAY = 2400;
-const SHOT_LIFETIME = 10_000; // each polaroid disappears after 10 seconds
+const SHOT_LIFETIME = 10_000;
 
-// Shutter timing: blades close, flash + photo at the closed moment, blades open.
 const SHUTTER_TOTAL = 0.52;
-const SHUTTER_CLOSED_AT = 0.17; // seconds
+const SHUTTER_CLOSED_AT = 0.17;
 
 const EASE = [0.22, 1, 0.36, 1];
 
 /* ------------------------------------------------------------------ */
-/* Built-in shutter sound (no file needed). Two quick clicks + a thump. */
+/* Cloudinary image optimization                                       */
 /* ------------------------------------------------------------------ */
+
+const optimizeCloudinaryUrl = (url, width) => {
+  if (!url || !url.includes("res.cloudinary.com")) return url;
+
+  // Avoid adding transformations twice if the URL already has them.
+  const uploadIndex = url.indexOf("/upload/");
+  if (uploadIndex === -1) return url;
+
+  const afterUpload = url.slice(uploadIndex + "/upload/".length);
+
+  if (/^(?:f_auto|q_auto|w_\d+|c_limit|c_fill|c_scale)\b/.test(afterUpload)) {
+    return url;
+  }
+
+  return url.replace(
+    "/upload/",
+    `/upload/f_auto,q_auto,c_limit,w_${width}/`
+  );
+};
+
+const getHeroImageSrcSet = (url) => {
+  if (!url || !url.includes("res.cloudinary.com")) return undefined;
+
+  return [
+    `${optimizeCloudinaryUrl(url, 640)} 640w`,
+    `${optimizeCloudinaryUrl(url, 960)} 960w`,
+    `${optimizeCloudinaryUrl(url, 1440)} 1440w`,
+    `${optimizeCloudinaryUrl(url, 1920)} 1920w`,
+  ].join(", ");
+};
+
+/* ------------------------------------------------------------------ */
+/* Built-in shutter sound                                              */
+/* ------------------------------------------------------------------ */
+
 function playSynthShutter(ctx) {
   const now = ctx.currentTime;
 
@@ -46,7 +81,9 @@ function playSynthShutter(ctx) {
     const data = buffer.getChannelData(0);
 
     for (let i = 0; i < length; i += 1) {
-      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (length * 0.16));
+      data[i] =
+        (Math.random() * 2 - 1) *
+        Math.exp(-i / (length * 0.16));
     }
 
     const source = ctx.createBufferSource();
@@ -83,15 +120,16 @@ function playSynthShutter(ctx) {
     osc.stop(time + 0.1);
   };
 
-  click(now, 3400, 1.1); // shutter closes
+  click(now, 3400, 1.1);
   thump(now);
-  click(now + 0.09, 2300, 0.8); // shutter opens
+  click(now + 0.09, 2300, 0.8);
   thump(now + 0.09);
 }
 
 /* ------------------------------------------------------------------ */
-/* Shutter iris: six-sided aperture that snaps shut on the click point */
+/* Shutter iris                                                        */
 /* ------------------------------------------------------------------ */
+
 function ShutterIris({ trigger }) {
   const maskId = useId();
 
@@ -102,7 +140,10 @@ function ShutterIris({ trigger }) {
   useEffect(() => {
     if (!trigger) return undefined;
 
-    const open = Math.hypot(window.innerWidth, window.innerHeight) * 1.15;
+    const open = Math.hypot(
+      window.innerWidth,
+      window.innerHeight
+    ) * 1.15;
 
     cx.set(trigger.x);
     cy.set(trigger.y);
@@ -142,7 +183,6 @@ function ShutterIris({ trigger }) {
         mask={`url(#${maskId})`}
       />
 
-      {/* Thin gold ring on the aperture edge */}
       <motion.polygon
         points={points}
         fill="none"
@@ -155,20 +195,31 @@ function ShutterIris({ trigger }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Polaroid: shows the FULL photo, develops slowly, disappears after 10s */
+/* Polaroid                                                            */
 /* ------------------------------------------------------------------ */
+
 function Polaroid({ shot, reduced, constraintsRef, onExpire }) {
   const develop = reduced
     ? {}
     : {
-        initial: { filter: "brightness(0.15) saturate(0) blur(8px)" },
-        animate: { filter: "brightness(1) saturate(1) blur(0px)" },
-        transition: { duration: 3.8, ease: [0.3, 0.1, 0.2, 1], delay: 0.4 },
+        initial: {
+          filter: "brightness(0.15) saturate(0) blur(8px)",
+        },
+        animate: {
+          filter: "brightness(1) saturate(1) blur(0px)",
+        },
+        transition: {
+          duration: 3.8,
+          ease: [0.3, 0.1, 0.2, 1],
+          delay: 0.4,
+        },
       };
 
-  // Remove this polaroid 10 seconds after it appears.
   useEffect(() => {
-    const timer = window.setTimeout(() => onExpire(shot.id), SHOT_LIFETIME);
+    const timer = window.setTimeout(
+      () => onExpire(shot.id),
+      SHOT_LIFETIME
+    );
 
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -180,7 +231,6 @@ function Polaroid({ shot, reduced, constraintsRef, onExpire }) {
       dragMomentum={false}
       dragConstraints={constraintsRef}
       dragElastic={0.08}
-      // Clicking or dragging a polaroid must not take a new photo.
       onClick={(event) => event.stopPropagation()}
       aria-label={`Photograph ${shot.number}, drag to move`}
       initial={{
@@ -189,7 +239,12 @@ function Polaroid({ shot, reduced, constraintsRef, onExpire }) {
         rotate: shot.rotation - 14,
         y: 60,
       }}
-      animate={{ opacity: 1, scale: 1, rotate: shot.rotation, y: 0 }}
+      animate={{
+        opacity: 1,
+        scale: 1,
+        rotate: shot.rotation,
+        y: 0,
+      }}
       exit={{
         opacity: 0,
         scale: 0.7,
@@ -211,7 +266,6 @@ function Polaroid({ shot, reduced, constraintsRef, onExpire }) {
       }}
     >
       <div className="border border-black/10 bg-[#f1eee6] p-[7px] pb-3 shadow-[0_12px_35px_rgba(0,0,0,0.4)] sm:p-[9px] sm:pb-4">
-        {/* Photo area uses the real aspect ratio, so the whole image shows. */}
         <div
           className="relative w-full overflow-hidden bg-neutral-900"
           style={{ aspectRatio: shot.aspect }}
@@ -221,6 +275,8 @@ function Polaroid({ shot, reduced, constraintsRef, onExpire }) {
             src={shot.image}
             alt=""
             draggable={false}
+            loading="lazy"
+            decoding="async"
             className="absolute inset-0 h-full w-full select-none object-cover"
           />
 
@@ -250,6 +306,7 @@ function Polaroid({ shot, reduced, constraintsRef, onExpire }) {
 /* ------------------------------------------------------------------ */
 /* Hero                                                                */
 /* ------------------------------------------------------------------ */
+
 export default function Hero() {
   const reduced = useReducedMotion();
 
@@ -262,7 +319,6 @@ export default function Hero() {
   const [flash, setFlash] = useState(false);
   const [shutter, setShutter] = useState(null);
   const [aiming, setAiming] = useState(false);
-
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   const sectionRef = useRef(null);
@@ -271,18 +327,26 @@ export default function Hero() {
   const autoDoneRef = useRef(false);
   const shutterAudioRef = useRef(null);
   const soundRef = useRef(true);
-  const fileReadyRef = useRef(false); // true when the mp3 loaded fine
+  const fileReadyRef = useRef(false);
   const audioCtxRef = useRef(null);
   const timersRef = useRef([]);
 
   const cursorX = useMotionValue(0);
   const cursorY = useMotionValue(0);
 
-  const smoothX = useSpring(cursorX, { stiffness: 180, damping: 24 });
-  const smoothY = useSpring(cursorY, { stiffness: 180, damping: 24 });
+  const smoothX = useSpring(cursorX, {
+    stiffness: 180,
+    damping: 24,
+  });
+
+  const smoothY = useSpring(cursorY, {
+    stiffness: 180,
+    damping: 24,
+  });
 
   const heroImage = heroContent?.imageUrl || "";
 
+  // Fetch the admin-managed hero content.
   useEffect(() => {
     let active = true;
 
@@ -306,24 +370,31 @@ export default function Hero() {
     };
   }, []);
 
-  // Keep a ref of the sound setting so capture() stays stable
-  // (a changing capture() used to cancel the auto photo timer).
+  // If the image URL has already been cached, don't wait for another load event.
+  useEffect(() => {
+    const img = imgRef.current;
+
+    if (img?.complete && img.naturalWidth > 0) {
+      setLoadedImage(true);
+      setFailedImage(false);
+    }
+  }, [heroImage]);
+
   useEffect(() => {
     soundRef.current = soundEnabled;
   }, [soundEnabled]);
 
-  // Real recorded camera shutter sound (optional).
-  // File: public/sounds/camera-shutter.mp3
-  // If the file is missing, a built-in synthesized shutter sound plays instead.
+  // Camera shutter audio.
   useEffect(() => {
     const audio = new Audio("/sounds/camera-shutter.mp3");
 
-    audio.preload = "auto";
+    audio.preload = "none";
     audio.volume = 0.7;
 
     const markReady = () => {
       fileReadyRef.current = true;
     };
+
     const markFailed = () => {
       fileReadyRef.current = false;
     };
@@ -350,7 +421,6 @@ export default function Hero() {
   const playShutterSound = useCallback(() => {
     if (!soundRef.current) return;
 
-    // 1) Real recording, when the file exists.
     const audio = shutterAudioRef.current;
 
     if (audio && fileReadyRef.current) {
@@ -360,18 +430,15 @@ export default function Hero() {
         const playback = audio.play();
 
         if (playback && typeof playback.catch === "function") {
-          playback.catch(() => {
-            // Blocked before first user interaction. Nothing to do.
-          });
+          playback.catch(() => {});
         }
       } catch {
-        // Fall through silently.
+        // Continue to the synthesized sound.
       }
 
       return;
     }
 
-    // 2) Built-in synthesized sound.
     try {
       const AudioContextClass =
         window.AudioContext || window.webkitAudioContext;
@@ -385,25 +452,27 @@ export default function Hero() {
       const ctx = audioCtxRef.current;
 
       if (ctx.state === "suspended") {
-        // Allowed only after a user gesture. Auto first shot stays silent.
         ctx.resume().then(() => playSynthShutter(ctx)).catch(() => {});
         return;
       }
 
       playSynthShutter(ctx);
     } catch {
-      // Sound is optional. Camera still works.
+      // Camera sound is optional.
     }
   }, []);
 
   const triggerFlash = useCallback(() => {
     setFlash(true);
 
-    const id = window.setTimeout(() => setFlash(false), reduced ? 120 : 260);
+    const id = window.setTimeout(
+      () => setFlash(false),
+      reduced ? 120 : 260
+    );
+
     timersRef.current.push(id);
   }, [reduced]);
 
-  // Take a photo of the spot at (clientX, clientY).
   const capture = useCallback(
     (clientX, clientY) => {
       const section = sectionRef.current;
@@ -414,14 +483,13 @@ export default function Hero() {
       const px = clientX - bounds.left;
       const py = clientY - bounds.top;
 
-      // Real aspect ratio of the photo, so the polaroid shows all of it.
       const img = imgRef.current;
+
       const aspect =
         img?.naturalWidth && img?.naturalHeight
           ? img.naturalWidth / img.naturalHeight
           : 1.5;
 
-      // Keep the polaroid fully on screen, and clear of the text on phones.
       const vw = window.innerWidth;
       const isPhone = vw < 640;
       const width = vw < 640 ? 150 : vw < 768 ? 180 : 210;
@@ -434,6 +502,7 @@ export default function Hero() {
       const minX = isPhone ? 4 : 34;
       const maxX = Math.max(minX, 96 - widthPct);
       const minY = headerPct + 2;
+
       const maxY = Math.max(
         minY,
         isPhone ? 100 - heightPct - 52 : 100 - heightPct - 10
@@ -454,14 +523,12 @@ export default function Hero() {
       };
 
       setTaken(number);
-
       playShutterSound();
 
       if (!reduced) {
         setShutter({ id: number, x: px, y: py });
       }
 
-      // The photo appears at the moment the shutter is fully closed.
       const delay = reduced ? 0 : SHUTTER_CLOSED_AT * 1000;
 
       const id = window.setTimeout(() => {
@@ -482,14 +549,15 @@ export default function Hero() {
     [capture]
   );
 
-  // Remove a polaroid (called 10 seconds after it appears).
   const expireShot = useCallback((id) => {
     setShots((current) => current.filter((shot) => shot.id !== id));
   }, []);
 
-  // Automatically capture one Polaroid after the hero photograph loads.
+  // Automatically take the first Polaroid after the hero image loads.
   useEffect(() => {
-    if (!loadedImage || !heroImage || autoDoneRef.current) return undefined;
+    if (!loadedImage || !heroImage || autoDoneRef.current) {
+      return undefined;
+    }
 
     const timeout = window.setTimeout(() => {
       if (autoDoneRef.current || !sectionRef.current) return;
@@ -536,14 +604,18 @@ export default function Hero() {
         onClick={handlePhotoClick}
         className="relative isolate flex min-h-[100svh] w-full cursor-crosshair flex-col justify-end overflow-hidden bg-[#090a0b] text-[#f3f0e8] selection:bg-white/20"
       >
-        {/* Full-bleed hero photograph */}
+        {/* Optimized full-bleed hero photograph */}
         {heroImage && (
           <img
             ref={imgRef}
-            src={heroImage}
+            src={optimizeCloudinaryUrl(heroImage, 1440)}
+            srcSet={getHeroImageSrcSet(heroImage)}
+            sizes="100vw"
             alt="Midhun Frames cinematic photography"
             draggable={false}
             fetchPriority="high"
+            loading="eager"
+            decoding="async"
             onLoad={() => {
               setLoadedImage(true);
               setFailedImage(false);
@@ -556,11 +628,8 @@ export default function Hero() {
           />
         )}
 
-        {/* Grading: lighter than before, so the photo stays clearly visible */}
         <div className="pointer-events-none absolute inset-0 bg-black/10" />
-
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
-
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-black/25" />
 
         {/* Film grain */}
@@ -568,11 +637,11 @@ export default function Hero() {
           className="pointer-events-none absolute inset-0 opacity-[0.1] mix-blend-soft-light"
           style={{
             backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.88' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E\")",
+              'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 180 180\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'.88\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'.4\'/%3E%3C/svg%3E")',
           }}
         />
 
-        {/* Viewfinder frame, starts below the fixed header */}
+        {/* Viewfinder frame */}
         <div className="pointer-events-none absolute inset-x-4 bottom-4 top-[84px] sm:inset-x-8 sm:bottom-8 md:inset-x-10 md:bottom-10">
           <span className="absolute left-0 top-0 h-5 w-5 border-l border-t border-[#c9a875] sm:h-7 sm:w-7" />
           <span className="absolute right-0 top-0 h-5 w-5 border-r border-t border-[#c9a875] sm:h-7 sm:w-7" />
@@ -587,7 +656,7 @@ export default function Hero() {
         <div className="pointer-events-none absolute left-7 right-7 top-[100px] z-10 flex items-start justify-between gap-4 sm:left-12 sm:right-12 sm:top-[108px] md:left-16 md:right-16">
           <div>
             <p className="text-[9px] uppercase tracking-[0.3em] text-white/80 sm:text-[10px]">
-              {heroContent?.eyebrow || "Photography Â· Films Â· Stories"}
+              {heroContent?.eyebrow || "Photography · Films · Stories"}
             </p>
             <div className="mt-3 h-px w-12 bg-[#c9a875]" />
           </div>
@@ -602,7 +671,7 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Polaroid layer: ignores clicks, only the polaroids catch them */}
+        {/* Polaroid layer */}
         <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
           <AnimatePresence initial={false}>
             {shots.map((shot) => (
@@ -617,12 +686,11 @@ export default function Hero() {
           </AnimatePresence>
         </div>
 
-        {/* Main editorial text */}
+        {/* Main editorial text - shown immediately */}
         <div className="pointer-events-none relative z-10 w-full px-7 pb-28 pt-44 sm:px-12 sm:pb-28 md:px-16 md:pb-32">
           <motion.div
-            initial={reduced ? false : { opacity: 0, y: 25 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, ease: EASE }}
             className="max-w-3xl"
           >
             <p className="mb-5 flex items-center gap-3 text-[9px] uppercase tracking-[0.32em] text-white/80 sm:text-[10px]">
@@ -687,7 +755,11 @@ export default function Hero() {
           <div className="ml-auto flex items-center gap-5">
             <motion.div
               animate={reduced ? undefined : { y: [0, 5, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
               className="hidden items-center gap-3 text-[8px] uppercase tracking-[0.2em] text-white/75 sm:flex sm:text-[9px]"
             >
               <span>Scroll to explore</span>
@@ -715,7 +787,7 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Custom cursor (mouse only) */}
+        {/* Custom cursor */}
         {!reduced && aiming && (
           <motion.div
             className="pointer-events-none fixed left-0 top-0 z-[80] hidden h-10 w-10 items-center justify-center rounded-full border border-white/55 text-white/80 mix-blend-difference md:flex"
@@ -730,10 +802,10 @@ export default function Hero() {
           </motion.div>
         )}
 
-        {/* Shutter blades: close on the click point, then open */}
+        {/* Shutter blades */}
         {!reduced && <ShutterIris trigger={shutter} />}
 
-        {/* Camera flash at the closed moment */}
+        {/* Camera flash */}
         <AnimatePresence>
           {flash && (
             <motion.div
@@ -746,7 +818,6 @@ export default function Hero() {
           )}
         </AnimatePresence>
 
-        {/* Image loading/error indicators */}
         {!heroImage && (
           <div className="pointer-events-none absolute inset-0 -z-10 bg-[#090a0b]" />
         )}
